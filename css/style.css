@@ -838,6 +838,19 @@ p { margin: 0 0 1.1em; }
 
 .post-foot a:hover { color: var(--ink); }
 
+.post-embed {
+  border: 2px solid var(--ink);
+  border-radius: 18px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.post-embed iframe {
+  display: block;
+  width: 100%;
+  border: none;
+}
+
 /* ---------- page intro (blog/about/portfolio/contact top) ---------- */
 .page-intro {
   padding: 60px 0 40px;
