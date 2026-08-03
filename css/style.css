@@ -265,7 +265,7 @@ p { margin: 0 0 1.1em; }
   border-bottom: 2px solid var(--ink);
   background-image:
     linear-gradient(180deg, rgba(29,38,30,0.72), rgba(29,38,30,0.55)),
-    url("assets/hero-bg.jpg");
+    url("../assets/hero-bg.jpg");
   background-size: cover;
   background-position: center;
   color: var(--tan);
