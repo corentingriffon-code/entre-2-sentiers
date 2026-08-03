@@ -18,16 +18,12 @@ css/style.css           Design system (couleurs, typos, composants)
 js/main.js               Menu mobile + filtre du blog
 assets/favicon.svg       Favicon
 assets/fonts/             Polices auto-hébergées (Caveat, Bebas Neue, Work Sans)
-assets/hero-bg.jpg        Photo de fond du hero d'accueil (à fournir, voir plus bas)
+assets/hero-bg.jpg        Photo de fond du hero d'accueil
 ```
 
 ## À personnaliser avant mise en ligne
 
-- **Liens réseaux sociaux** : dans `contact.html` (et les blocs footer de chaque page), remplace les URL placeholder :
-  - `https://www.linkedin.com/in/TON-PROFIL-LINKEDIN`
-  - `https://www.tiktok.com/@entre2sentiers`
-  - `https://www.instagram.com/entre2sentiers`
-- **Adresse mail de contact** : `bonjour@entre2sentiers.fr` dans `contact.html`.
+- **Adresse mail de contact** : `bonjour@entre2sentiers.fr` dans `contact.html` est un placeholder, à remplacer par une vraie adresse.
 - **Photos** : `portfolio.html` contient des emplacements réservés (`photo-slot`). Remplace chaque `<div class="photo-slot ...">` par une balise `<img>` pointant vers tes photos une fois disponibles. Fais de même pour les bandeaux `card-media` des articles si tu veux y ajouter de vraies images.
 - **Photo de fond du hero** : dépose un fichier `assets/hero-bg.jpg` (photo large format, format paysage) ; le hero de `index.html` l'utilise automatiquement en fond avec un dégradé sombre par-dessus. Sans fichier, un dégradé vert uni s'affiche à la place, rien n'est cassé.
 - **Nom d'auteur** : `a-propos.html` utilise le prénom Corentin, à ajuster si besoin.
