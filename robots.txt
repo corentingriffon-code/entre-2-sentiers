@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://entre2sentiers.fr/sitemap.xml
