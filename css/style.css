@@ -855,6 +855,8 @@ p { margin: 0 0 1.1em; }
   color: var(--muted);
 }
 
+.footer-legal-link:hover { text-decoration: underline; }
+
 /* ---------- actualités (fil de posts) ---------- */
 .news-feed {
   display: flex;
