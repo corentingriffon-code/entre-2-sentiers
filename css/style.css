@@ -21,6 +21,22 @@
 }
 
 @font-face {
+  font-family: "Caveat";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../assets/fonts/caveat-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Caveat";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../assets/fonts/caveat-700.woff2") format("woff2");
+}
+
+@font-face {
   font-family: "Work Sans";
   font-style: normal;
   font-weight: 400;
@@ -64,7 +80,8 @@
   --paper-line: rgba(29, 38, 30, 0.16);
   --shadow: 0 18px 40px -20px rgba(29, 38, 30, 0.4);
 
-  --font-script: "Komentator", cursive;
+  --font-script: "Caveat", cursive;
+  --font-logo: "Komentator", cursive;
   --font-display: "Bebas Neue", sans-serif;
   --font-body: "Work Sans", sans-serif;
 
@@ -165,7 +182,7 @@ p { margin: 0 0 1.1em; }
 }
 
 .logo {
-  font-family: var(--font-script);
+  font-family: var(--font-logo);
   font-weight: 400;
   font-size: 2.1rem;
   color: var(--dark);
