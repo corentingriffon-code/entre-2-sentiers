@@ -615,6 +615,16 @@ p { margin: 0 0 1.1em; }
   padding-left: 20px;
 }
 
+.article-body p a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(29,38,30,0.35);
+}
+
+.article-body p a:hover {
+  text-decoration-color: currentColor;
+}
+
 .closing-question {
   margin-top: 3em;
   padding: 26px 28px;
