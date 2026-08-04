@@ -786,6 +786,31 @@ p { margin: 0 0 1.1em; }
 .tint-3 { background: rgba(215,201,172,0.55); }
 .tint-4 { background: rgba(189,195,169,0.5); }
 
+.photo-slot-filled {
+  position: relative;
+  overflow: hidden;
+  border: none;
+  background-size: cover;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+.photo-slot-filled::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(29,38,30,0.8) 0%, rgba(29,38,30,0) 50%);
+}
+
+.photo-slot-filled .cap {
+  position: relative;
+  z-index: 2;
+  align-self: flex-start;
+  color: var(--tan);
+}
+
+.photo-slot-filled small { display: none; }
+
 /* ---------- contact ---------- */
 .contact-section {
   padding: 80px 0 100px;
