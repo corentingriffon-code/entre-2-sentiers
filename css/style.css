@@ -1474,13 +1474,13 @@ p { margin: 0 0 1.1em; }
 
 .sortie-row {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 0.8fr 520px;
   gap: 50px;
   align-items: center;
 }
 
 .sortie-row-alt {
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: 520px 0.8fr;
 }
 
 .sortie-num {
@@ -1497,7 +1497,7 @@ p { margin: 0 0 1.1em; }
 .sortie-copy p { color: var(--muted); margin: 0; }
 
 .sortie-photo {
-  height: 240px;
+  height: 340px;
   border-radius: 20px;
   background-size: cover;
   background-position: center;
