@@ -776,6 +776,8 @@ p { margin: 0 0 1.1em; }
   box-shadow: 0 20px 40px -26px rgba(29,38,30,0.4);
 }
 
+.contact-grid h2 { font-size: 1.4rem; }
+
 .social-list {
   display: flex;
   flex-direction: column;
@@ -975,9 +977,8 @@ p { margin: 0 0 1.1em; }
 .podcast-play {
   position: absolute;
   z-index: 3;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  bottom: 40px;
+  right: 40px;
   width: 92px;
   height: 92px;
   border-radius: 50%;
@@ -1154,17 +1155,7 @@ p { margin: 0 0 1.1em; }
 }
 
 /* ---------- responsive ---------- */
-@media (max-width: 880px) {
-  .pillars-grid,
-  .article-grid,
-  .ecosystem-grid,
-  .timeline-grid { grid-template-columns: 1fr; }
-
-  .portfolio-grid { grid-template-columns: repeat(2, 1fr); }
-  .portfolio-grid .wide { grid-column: span 2; }
-
-  .contact-grid { grid-template-columns: 1fr; }
-
+@media (max-width: 1040px) {
   .main-nav {
     position: absolute;
     top: calc(100% + 10px);
@@ -1186,6 +1177,18 @@ p { margin: 0 0 1.1em; }
   .main-nav.open { display: flex; }
 
   .nav-toggle { display: flex; }
+}
+
+@media (max-width: 880px) {
+  .pillars-grid,
+  .article-grid,
+  .ecosystem-grid,
+  .timeline-grid { grid-template-columns: 1fr; }
+
+  .portfolio-grid { grid-template-columns: repeat(2, 1fr); }
+  .portfolio-grid .wide { grid-column: span 2; }
+
+  .contact-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 560px) {

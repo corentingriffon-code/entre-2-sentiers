@@ -3,13 +3,19 @@ document.addEventListener("DOMContentLoaded", function () {
   var nav = document.querySelector(".main-nav");
 
   if (toggle && nav) {
+    var setOpen = function (isOpen) {
+      nav.classList.toggle("open", isOpen);
+      toggle.setAttribute("aria-expanded", String(isOpen));
+      toggle.setAttribute("aria-label", isOpen ? "Fermer le menu" : "Ouvrir le menu");
+    };
+
     toggle.addEventListener("click", function () {
-      nav.classList.toggle("open");
+      setOpen(!nav.classList.contains("open"));
     });
 
     nav.querySelectorAll("a").forEach(function (link) {
       link.addEventListener("click", function () {
-        nav.classList.remove("open");
+        setOpen(false);
       });
     });
   }
