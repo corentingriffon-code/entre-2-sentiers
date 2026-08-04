@@ -896,12 +896,10 @@ body.v2 { background: var(--tan); }
 
 .glass-header {
   position: fixed;
-  top: 22px;
-  left: 0;
-  right: 0;
+  top: 20px;
+  left: 20px;
+  right: 20px;
   z-index: 200;
-  display: flex;
-  justify-content: center;
   pointer-events: none;
 }
 
@@ -917,8 +915,8 @@ body.v2 { background: var(--tan); }
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
   border: 1px solid rgba(215, 201, 172, 0.25);
-  max-width: 1120px;
-  margin: 0 24px;
+  max-width: none;
+  margin: 0;
 }
 
 .glass-header .logo {
@@ -959,7 +957,7 @@ body.v2 { background: var(--tan); }
 /* ---- hero v2 ---- */
 .hero-v2 {
   position: relative;
-  padding: 0 0 70px;
+  padding: 110px 0 70px;
 }
 
 .hero-v2-title {
@@ -979,13 +977,14 @@ body.v2 { background: var(--tan); }
 
 .hero-v2-frame {
   position: relative;
-  margin: 0;
-  height: 100vh;
+  margin: 0 20px;
+  height: 92vh;
   min-height: 680px;
-  border-radius: 0 0 28px 28px;
+  border-radius: 28px;
   overflow: hidden;
   background-size: cover;
   background-position: center;
+  box-shadow: var(--shadow);
 }
 
 .hero-v2-frame::after {
