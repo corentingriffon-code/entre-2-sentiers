@@ -188,6 +188,18 @@ p { margin: 0 0 1.1em; }
   color: var(--dark);
   line-height: 0.9;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+}
+
+.logo img {
+  display: block;
+  height: 58px;
+  width: auto;
+}
+
+.footer-top .logo img {
+  height: 48px;
 }
 
 .logo .num {
