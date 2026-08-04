@@ -51,29 +51,80 @@
     </div>
   </div>
 
-  <!--
-    COMMENT BRANCHER LE VRAI LECTEUR SPOTIFY :
-    1. Sur Spotify, ouvre la page de ton émission (ou d'un épisode).
-    2. Copie l'URL, du type https://open.spotify.com/show/XXXXXXXX
-    3. Remplace-la ci-dessous par : https://open.spotify.com/embed/show/XXXXXXXX
-       (ajoute simplement "embed/" après open.spotify.com/)
-    4. Colle ce lien dans le src de l'iframe à la place du placeholder,
-       et retire le bloc .podcast-embed-note.
-    Avec le lien de l'émission (et non d'un seul épisode), le lecteur
-    Spotify affiche automatiquement tous les épisodes et se met à jour
-    tout seul à chaque nouvelle publication, aucune main à remettre ici.
-  -->
+  <div class="podcast-layout">
 
-  <div class="podcast-embed-note">
-    <p><strong>Lecteur Spotify à brancher.</strong></p>
-    <p>Envoie-moi le lien de ton émission sur Spotify (open.spotify.com/show/...) et j'intègre le lecteur ici. Il se mettra à jour automatiquement à chaque nouvel épisode.</p>
-  </div>
+    <aside class="podcast-side">
+      <!--
+        COMMENT AJOUTER UNE RECOMMANDATION :
+        Duplique un bloc .reco-card, change background-image (photo de
+        l'épisode/vidéo), .reco-kind (Podcast / YouTube), .reco-title
+        et le lien href. Envoie-moi tes liens Spotify et YouTube et je
+        remplis ces vignettes avec tes vrais épisodes et vidéos.
+      -->
+      <span class="podcast-side-label">À écouter aussi</span>
 
-  <!-- Exemple une fois le lien fourni :
-  <div class="post-embed">
-    <iframe src="https://open.spotify.com/embed/show/REMPLACER_PAR_ID" width="100%" height="352" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Podcast Entre 2 sentiers"></iframe>
+      <a class="reco-card" href="#ecouter" style="background-image:url('assets/hero-bg.jpg');">
+        <span class="reco-play">▶</span>
+        <div class="reco-card-body">
+          <span class="reco-kind">Podcast</span>
+          <span class="reco-title">Épisode à venir</span>
+        </div>
+      </a>
+
+      <a class="reco-card" href="#ecouter" style="background-image:url('assets/hero-bg.jpg');">
+        <span class="reco-play">▶</span>
+        <div class="reco-card-body">
+          <span class="reco-kind">Podcast</span>
+          <span class="reco-title">Épisode à venir</span>
+        </div>
+      </a>
+
+      <span class="podcast-side-label" style="margin-top:10px;">À regarder</span>
+
+      <a class="reco-card" href="#ecouter" style="background-image:url('assets/hero-bg.jpg');">
+        <span class="reco-play">▶</span>
+        <div class="reco-card-body">
+          <span class="reco-kind">YouTube</span>
+          <span class="reco-title">Vidéo à venir</span>
+        </div>
+      </a>
+
+      <a class="reco-card" href="#ecouter" style="background-image:url('assets/hero-bg.jpg');">
+        <span class="reco-play">▶</span>
+        <div class="reco-card-body">
+          <span class="reco-kind">YouTube</span>
+          <span class="reco-title">Vidéo à venir</span>
+        </div>
+      </a>
+    </aside>
+
+    <div>
+      <!--
+        COMMENT BRANCHER LE VRAI LECTEUR SPOTIFY :
+        1. Sur Spotify, ouvre la page de ton émission (ou d'un épisode).
+        2. Copie l'URL, du type https://open.spotify.com/show/XXXXXXXX
+        3. Remplace-la ci-dessous par : https://open.spotify.com/embed/show/XXXXXXXX
+           (ajoute simplement "embed/" après open.spotify.com/)
+        4. Colle ce lien dans le src de l'iframe à la place du placeholder,
+           et retire le bloc .podcast-embed-note.
+        Avec le lien de l'émission (et non d'un seul épisode), le lecteur
+        Spotify affiche automatiquement tous les épisodes et se met à jour
+        tout seul à chaque nouvelle publication, aucune main à remettre ici.
+      -->
+
+      <div class="podcast-embed-note">
+        <p><strong>Lecteur Spotify à brancher.</strong></p>
+        <p>Envoie-moi le lien de ton émission sur Spotify (open.spotify.com/show/...) et j'intègre le lecteur ici. Il se mettra à jour automatiquement à chaque nouvel épisode.</p>
+      </div>
+
+      <!-- Exemple une fois le lien fourni :
+      <div class="post-embed">
+        <iframe src="https://open.spotify.com/embed/show/REMPLACER_PAR_ID" width="100%" height="352" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Podcast Entre 2 sentiers"></iframe>
+      </div>
+      -->
+    </div>
+
   </div>
-  -->
 </section>
 
 <footer class="site-footer">

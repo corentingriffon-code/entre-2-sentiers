@@ -1011,6 +1011,95 @@ p { margin: 0 0 1.1em; }
 
 .podcast-embed-note strong { color: var(--ink); }
 
+.podcast-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 30px;
+  align-items: start;
+}
+
+.podcast-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.podcast-side-label {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.reco-card {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  height: 108px;
+  border-radius: 16px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 14px 30px -20px rgba(29,38,30,0.4);
+}
+
+.reco-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(29,38,30,0.85) 0%, rgba(29,38,30,0.15) 70%);
+}
+
+.reco-card-body {
+  position: relative;
+  z-index: 2;
+  padding: 10px 14px 12px;
+  color: var(--tan);
+}
+
+.reco-kind {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lime);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.reco-title {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+  display: block;
+}
+
+.reco-play {
+  position: absolute;
+  z-index: 3;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(215,201,172,0.2);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(215,201,172,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: var(--tan);
+}
+
+@media (max-width: 800px) {
+  .podcast-layout { grid-template-columns: 1fr; }
+  .podcast-side { flex-direction: row; overflow-x: auto; padding-bottom: 6px; }
+  .podcast-side .reco-card { min-width: 220px; }
+}
+
 /* ---------- page intro (blog/about/portfolio/contact top) ---------- */
 .page-intro {
   padding: 170px 0 40px;
