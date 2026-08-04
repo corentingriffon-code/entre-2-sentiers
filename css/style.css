@@ -1567,4 +1567,5 @@ p { margin: 0 0 1.1em; }
 @media (max-width: 620px) {
   .dest-grid { grid-template-columns: 1fr; }
   .hero-v2-title { font-size: clamp(3rem, 16vw, 6rem); }
+  .hero-v2-frame { min-height: 720px; }
 }
