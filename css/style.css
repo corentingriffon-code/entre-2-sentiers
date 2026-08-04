@@ -901,6 +901,99 @@ p { margin: 0 0 1.1em; }
   border: none;
 }
 
+/* ---------- podcast ---------- */
+.podcast-hero {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 66vh;
+  border-radius: 32px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  box-shadow: var(--shadow);
+}
+
+.podcast-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(29,38,30,0.88) 0%, rgba(29,38,30,0.35) 50%, rgba(29,38,30,0.15) 100%);
+}
+
+.podcast-play {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: rgba(215,201,172,0.16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(215,201,172,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  color: var(--tan);
+}
+
+.podcast-hero-body {
+  position: relative;
+  z-index: 2;
+  padding: 46px;
+  max-width: 640px;
+  color: var(--tan);
+}
+
+.podcast-hero-body .eyebrow { color: var(--lime); }
+.podcast-hero-body .eyebrow::before { background: var(--lime); }
+
+.podcast-hero-body h1 {
+  color: var(--tan);
+  margin-bottom: 14px;
+}
+
+.podcast-hero-body p {
+  color: rgba(215,201,172,0.88);
+  font-size: 1.05rem;
+  margin-bottom: 24px;
+  max-width: 520px;
+}
+
+.podcast-hero-body .btn-primary {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: var(--dark);
+}
+
+.podcast-hero-body .btn-outline {
+  border-color: var(--tan);
+  color: var(--tan);
+}
+
+.podcast-hero-body .btn-outline:hover {
+  background: var(--tan);
+  color: var(--dark);
+}
+
+.podcast-embed-section {
+  padding: 70px 0;
+}
+
+.podcast-embed-note {
+  border: 2px dashed rgba(29,38,30,0.3);
+  border-radius: 22px;
+  padding: 60px 30px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.podcast-embed-note strong { color: var(--ink); }
+
 /* ---------- page intro (blog/about/portfolio/contact top) ---------- */
 .page-intro {
   padding: 170px 0 40px;

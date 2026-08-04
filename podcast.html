@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Podcast. Entre 2 sentiers</title>
+<meta name="description" content="Le podcast Entre 2 sentiers : les histoires derrière les kilomètres, en version audio.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="logo">Entre <span class="num">2</span> Sentiers</a>
+    <nav class="main-nav">
+      <a href="index.html">Accueil</a>
+      <a href="blog.html">Réflexions</a>
+      <a href="actualites.html">Actualités</a>
+      <a href="podcast.html" class="active">Podcast</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="a-propos.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <button class="nav-toggle" aria-label="Ouvrir le menu"><span></span><span></span><span></span></button>
+  </div>
+</header>
+
+<section style="padding-top:130px;">
+  <div class="wrap">
+    <div class="podcast-hero" style="background-image:url('assets/hero-bg.jpg');">
+      <a class="podcast-play" href="#ecouter" aria-label="Écouter">▶</a>
+      <div class="podcast-hero-body">
+        <span class="eyebrow">Le podcast</span>
+        <h1>Entre 2 sentiers</h1>
+        <p>Les histoires derrière les kilomètres, en version audio. Marketing, communication et récits outdoor, racontés en conversation.</p>
+        <div class="hero-actions">
+          <a href="#ecouter" class="btn btn-primary">▶ Écouter le dernier épisode</a>
+          <a href="https://open.spotify.com" target="_blank" rel="noopener" class="btn btn-outline">Suivre sur Spotify</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="ecouter" class="podcast-embed-section wrap">
+  <div class="section-head">
+    <div>
+      <span class="eyebrow">Écouter</span>
+      <h2>Tous les épisodes</h2>
+    </div>
+  </div>
+
+  <!--
+    COMMENT BRANCHER LE VRAI LECTEUR SPOTIFY :
+    1. Sur Spotify, ouvre la page de ton émission (ou d'un épisode).
+    2. Copie l'URL, du type https://open.spotify.com/show/XXXXXXXX
+    3. Remplace-la ci-dessous par : https://open.spotify.com/embed/show/XXXXXXXX
+       (ajoute simplement "embed/" après open.spotify.com/)
+    4. Colle ce lien dans le src de l'iframe à la place du placeholder,
+       et retire le bloc .podcast-embed-note.
+    Avec le lien de l'émission (et non d'un seul épisode), le lecteur
+    Spotify affiche automatiquement tous les épisodes et se met à jour
+    tout seul à chaque nouvelle publication, aucune main à remettre ici.
+  -->
+
+  <div class="podcast-embed-note">
+    <p><strong>Lecteur Spotify à brancher.</strong></p>
+    <p>Envoie-moi le lien de ton émission sur Spotify (open.spotify.com/show/...) et j'intègre le lecteur ici. Il se mettra à jour automatiquement à chaque nouvel épisode.</p>
+  </div>
+
+  <!-- Exemple une fois le lien fourni :
+  <div class="post-embed">
+    <iframe src="https://open.spotify.com/embed/show/REMPLACER_PAR_ID" width="100%" height="352" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Podcast Entre 2 sentiers"></iframe>
+  </div>
+  -->
+</section>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <a href="index.html" class="logo" style="font-size:1.6rem;">Entre <span class="num">2</span> Sentiers</a>
+      <nav class="footer-nav">
+        <a href="blog.html">Réflexions</a>
+        <a href="actualites.html">Actualités</a>
+        <a href="podcast.html">Podcast</a>
+        <a href="portfolio.html">Portfolio</a>
+        <a href="a-propos.html">À propos</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+      <div class="footer-social">
+        <a href="https://www.linkedin.com/in/corentin-griffon/" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="https://www.tiktok.com/@corentingrff" target="_blank" rel="noopener">TikTok</a>
+        <a href="https://www.instagram.com/_zoom_studio/" target="_blank" rel="noopener">Instagram</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Entre 2 sentiers.</span>
+      <span>Les histoires derrière les kilomètres.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
