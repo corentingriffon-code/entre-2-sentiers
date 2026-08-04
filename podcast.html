@@ -28,17 +28,54 @@
 
 <section style="padding-top:130px;">
   <div class="wrap">
-    <div class="podcast-hero" style="background-image:url('assets/hero-bg.jpg');">
-      <a class="podcast-play" href="#ecouter" aria-label="Écouter">▶</a>
-      <div class="podcast-hero-body">
-        <span class="eyebrow">Le podcast</span>
-        <h1>Entre 2 sentiers</h1>
-        <p>Les histoires derrière les kilomètres, en version audio. Marketing, communication et récits outdoor, racontés en conversation.</p>
-        <div class="hero-actions">
-          <a href="#ecouter" class="btn btn-primary">▶ Écouter le dernier épisode</a>
-          <a href="https://open.spotify.com" target="_blank" rel="noopener" class="btn btn-outline">Suivre sur Spotify</a>
+    <div class="podcast-layout podcast-layout-hero">
+
+      <div class="podcast-hero" style="background-image:url('assets/hero-bg.jpg');">
+        <a class="podcast-play" href="#ecouter" aria-label="Écouter">▶</a>
+        <div class="podcast-hero-body">
+          <span class="eyebrow">Le podcast</span>
+          <h1>Entre 2 sentiers</h1>
+          <p>Les histoires derrière les kilomètres, en version audio. Marketing, communication et récits outdoor, racontés en conversation.</p>
+          <div class="hero-actions">
+            <a href="#ecouter" class="btn btn-primary">▶ Écouter le dernier épisode</a>
+            <a href="https://open.spotify.com" target="_blank" rel="noopener" class="btn btn-outline">Suivre sur Spotify</a>
+          </div>
         </div>
       </div>
+
+      <aside class="podcast-side">
+        <!--
+          COMMENT AJOUTER UN ÉPISODE PRÉCÉDENT :
+          Duplique un bloc .reco-card, change background-image (photo de
+          l'épisode), .reco-title et le lien href vers l'épisode Spotify.
+        -->
+        <span class="podcast-side-label">Épisodes précédents</span>
+
+        <a class="reco-card" href="#ecouter" style="background-image:url('assets/hero-bg.jpg');">
+          <span class="reco-play">▶</span>
+          <div class="reco-card-body">
+            <span class="reco-kind">Podcast</span>
+            <span class="reco-title">Épisode à venir</span>
+          </div>
+        </a>
+
+        <a class="reco-card" href="#ecouter" style="background-image:url('assets/hero-bg.jpg');">
+          <span class="reco-play">▶</span>
+          <div class="reco-card-body">
+            <span class="reco-kind">Podcast</span>
+            <span class="reco-title">Épisode à venir</span>
+          </div>
+        </a>
+
+        <a class="reco-card" href="#ecouter" style="background-image:url('assets/hero-bg.jpg');">
+          <span class="reco-play">▶</span>
+          <div class="reco-card-body">
+            <span class="reco-kind">Podcast</span>
+            <span class="reco-title">Épisode à venir</span>
+          </div>
+        </a>
+      </aside>
+
     </div>
   </div>
 </section>
@@ -51,78 +88,67 @@
     </div>
   </div>
 
-  <div class="podcast-layout">
+  <!--
+    COMMENT BRANCHER LE VRAI LECTEUR SPOTIFY :
+    1. Sur Spotify, ouvre la page de ton émission (ou d'un épisode).
+    2. Copie l'URL, du type https://open.spotify.com/show/XXXXXXXX
+    3. Remplace-la ci-dessous par : https://open.spotify.com/embed/show/XXXXXXXX
+       (ajoute simplement "embed/" après open.spotify.com/)
+    4. Colle ce lien dans le src de l'iframe à la place du placeholder,
+       et retire le bloc .podcast-embed-note.
+    Avec le lien de l'émission (et non d'un seul épisode), le lecteur
+    Spotify affiche automatiquement tous les épisodes et se met à jour
+    tout seul à chaque nouvelle publication, aucune main à remettre ici.
+  -->
 
-    <aside class="podcast-side">
-      <!--
-        COMMENT AJOUTER UNE RECOMMANDATION :
-        Duplique un bloc .reco-card, change background-image (photo de
-        l'épisode/vidéo), .reco-kind (Podcast / YouTube), .reco-title
-        et le lien href. Envoie-moi tes liens Spotify et YouTube et je
-        remplis ces vignettes avec tes vrais épisodes et vidéos.
-      -->
-      <span class="podcast-side-label">À écouter aussi</span>
+  <div class="podcast-embed-note">
+    <p><strong>Lecteur Spotify à brancher.</strong></p>
+    <p>Envoie-moi le lien de ton émission sur Spotify (open.spotify.com/show/...) et j'intègre le lecteur ici. Il se mettra à jour automatiquement à chaque nouvel épisode.</p>
+  </div>
 
-      <a class="reco-card" href="#ecouter" style="background-image:url('assets/hero-bg.jpg');">
-        <span class="reco-play">▶</span>
-        <div class="reco-card-body">
-          <span class="reco-kind">Podcast</span>
-          <span class="reco-title">Épisode à venir</span>
-        </div>
-      </a>
+  <!-- Exemple une fois le lien fourni :
+  <div class="post-embed">
+    <iframe src="https://open.spotify.com/embed/show/REMPLACER_PAR_ID" width="100%" height="352" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Podcast Entre 2 sentiers"></iframe>
+  </div>
+  -->
+</section>
 
-      <a class="reco-card" href="#ecouter" style="background-image:url('assets/hero-bg.jpg');">
-        <span class="reco-play">▶</span>
-        <div class="reco-card-body">
-          <span class="reco-kind">Podcast</span>
-          <span class="reco-title">Épisode à venir</span>
-        </div>
-      </a>
-
-      <span class="podcast-side-label" style="margin-top:10px;">À regarder</span>
-
-      <a class="reco-card" href="#ecouter" style="background-image:url('assets/hero-bg.jpg');">
-        <span class="reco-play">▶</span>
-        <div class="reco-card-body">
-          <span class="reco-kind">YouTube</span>
-          <span class="reco-title">Vidéo à venir</span>
-        </div>
-      </a>
-
-      <a class="reco-card" href="#ecouter" style="background-image:url('assets/hero-bg.jpg');">
-        <span class="reco-play">▶</span>
-        <div class="reco-card-body">
-          <span class="reco-kind">YouTube</span>
-          <span class="reco-title">Vidéo à venir</span>
-        </div>
-      </a>
-    </aside>
-
+<section class="podcast-embed-section wrap">
+  <div class="section-head">
     <div>
-      <!--
-        COMMENT BRANCHER LE VRAI LECTEUR SPOTIFY :
-        1. Sur Spotify, ouvre la page de ton émission (ou d'un épisode).
-        2. Copie l'URL, du type https://open.spotify.com/show/XXXXXXXX
-        3. Remplace-la ci-dessous par : https://open.spotify.com/embed/show/XXXXXXXX
-           (ajoute simplement "embed/" après open.spotify.com/)
-        4. Colle ce lien dans le src de l'iframe à la place du placeholder,
-           et retire le bloc .podcast-embed-note.
-        Avec le lien de l'émission (et non d'un seul épisode), le lecteur
-        Spotify affiche automatiquement tous les épisodes et se met à jour
-        tout seul à chaque nouvelle publication, aucune main à remettre ici.
-      -->
-
-      <div class="podcast-embed-note">
-        <p><strong>Lecteur Spotify à brancher.</strong></p>
-        <p>Envoie-moi le lien de ton émission sur Spotify (open.spotify.com/show/...) et j'intègre le lecteur ici. Il se mettra à jour automatiquement à chaque nouvel épisode.</p>
-      </div>
-
-      <!-- Exemple une fois le lien fourni :
-      <div class="post-embed">
-        <iframe src="https://open.spotify.com/embed/show/REMPLACER_PAR_ID" width="100%" height="352" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Podcast Entre 2 sentiers"></iframe>
-      </div>
-      -->
+      <span class="eyebrow">Ailleurs</span>
+      <h2>D'autres podcasts que j'écoute</h2>
     </div>
+  </div>
+
+  <div class="article-grid">
+
+    <a class="article-card" href="https://podcasts.apple.com/fr/podcast/safe-pace-le-podcast-des-sports-dendurance-pr%C3%A9sent%C3%A9/id1813423407" target="_blank" rel="noopener">
+      <div class="card-media tone-comprendre"><span>Safe Pace</span></div>
+      <div class="card-body">
+        <span class="tag comprendre">Endurance</span>
+        <h3>Safe Pace, par Hugo Clément</h3>
+        <p class="card-meta">Le podcast des sports d'endurance : triathlon, running, swimrun, trail.</p>
+      </div>
+    </a>
+
+    <a class="article-card" href="https://open.spotify.com/show/4SOoCH4LM0V4WZt4wqiTLH" target="_blank" rel="noopener">
+      <div class="card-media tone-creer"><span>Coureur</span></div>
+      <div class="card-body">
+        <span class="tag creer">Running</span>
+        <h3>Dans la tête d'un coureur</h3>
+        <p class="card-meta">Entraînement, nutrition et préparation mentale, par Guillaume et Fred.</p>
+      </div>
+    </a>
+
+    <a class="article-card" href="https://open.spotify.com/show/1uZLZwsSb1FLQcKR6s1cSV" target="_blank" rel="noopener">
+      <div class="card-media tone-partager"><span>Let's Trail</span></div>
+      <div class="card-body">
+        <span class="tag partager">Trail</span>
+        <h3>Let's Trail Podcast</h3>
+        <p class="card-meta">Rencontres avec des coureurs, entraîneurs et organisateurs de courses.</p>
+      </div>
+    </a>
 
   </div>
 </section>
