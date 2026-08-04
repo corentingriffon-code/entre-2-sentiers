@@ -959,7 +959,7 @@ body.v2 { background: var(--tan); }
 /* ---- hero v2 ---- */
 .hero-v2 {
   position: relative;
-  padding: 110px 0 70px;
+  padding: 0 0 70px;
 }
 
 .hero-v2-title {
@@ -979,14 +979,13 @@ body.v2 { background: var(--tan); }
 
 .hero-v2-frame {
   position: relative;
-  margin: 0 20px;
-  height: 92vh;
+  margin: 0;
+  height: 100vh;
   min-height: 680px;
-  border-radius: 28px;
+  border-radius: 0 0 28px 28px;
   overflow: hidden;
   background-size: cover;
   background-position: center;
-  box-shadow: var(--shadow);
 }
 
 .hero-v2-frame::after {
