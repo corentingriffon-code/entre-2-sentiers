@@ -612,6 +612,7 @@ p { margin: 0 0 1.1em; }
   border-radius: 999px;
   border: 1.5px solid var(--ink);
   background: transparent;
+  color: var(--ink);
   cursor: pointer;
 }
 
