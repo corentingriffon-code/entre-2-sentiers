@@ -3,10 +3,14 @@ document.addEventListener("DOMContentLoaded", function () {
   var nav = document.querySelector(".main-nav");
 
   if (toggle && nav) {
+    var isEnglish = document.documentElement.lang === "en";
+    var closeLabel = isEnglish ? "Close menu" : "Fermer le menu";
+    var openLabel = isEnglish ? "Open menu" : "Ouvrir le menu";
+
     var setOpen = function (isOpen) {
       nav.classList.toggle("open", isOpen);
       toggle.setAttribute("aria-expanded", String(isOpen));
-      toggle.setAttribute("aria-label", isOpen ? "Fermer le menu" : "Ouvrir le menu");
+      toggle.setAttribute("aria-label", isOpen ? closeLabel : openLabel);
     };
 
     toggle.addEventListener("click", function () {

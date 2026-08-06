@@ -230,6 +230,20 @@ p { margin: 0 0 1.1em; }
   color: var(--tan);
 }
 
+.main-nav a.lang-switch {
+  margin-left: 4px;
+  padding: 3px 10px;
+  border: 1px solid rgba(215, 201, 172, 0.4);
+  border-radius: 999px;
+  font-size: 0.8rem;
+}
+
+.main-nav a.lang-switch:hover {
+  border-color: var(--lime);
+  border-bottom: 1px solid var(--lime);
+  color: var(--tan);
+}
+
 .nav-toggle {
   display: none;
   flex-direction: column;

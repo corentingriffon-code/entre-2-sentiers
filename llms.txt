@@ -27,3 +27,25 @@
 - [Portfolio](https://entre2sentiers.com/portfolio): portfolio photo, images de montagne et de terrain.
 - [Podcast](https://entre2sentiers.com/podcast): podcast Entre 2 sentiers, premiers épisodes à venir.
 - [CGU](https://entre2sentiers.com/cgu): conditions générales d'utilisation.
+
+## English version
+
+The site is also available in English under /en. Same content, same author, translated pages and articles.
+
+- [Home](https://entre2sentiers.com/en): project overview and the three pillars.
+- [Reflections](https://entre2sentiers.com/en/reflections): all marketing analysis articles applied to trail running and the outdoors.
+- [About](https://entre2sentiers.com/en/about): manifesto, background and professional opportunities Corentin Griffon is looking for.
+- [News](https://entre2sentiers.com/en/news): latest posts republished from LinkedIn.
+- [Contact](https://entre2sentiers.com/en/contact): contact details for collaborations, assignments and communication opportunities.
+- [Should the UTMB keep growing?](https://entre2sentiers.com/en/articles/should-the-utmb-keep-growing): growth, economic spin-offs and territorial pressure, the UTMB case.
+- [Why the UTMB became a global marketing machine](https://entre2sentiers.com/en/articles/why-utmb-became-a-global-marketing-machine): how the UTMB became a media platform and a global brand.
+- [The marketing brief hidden behind every race bib](https://entre2sentiers.com/en/articles/the-marketing-brief-hidden-behind-every-bib): what organizing a race reveals about the customer journey.
+- [Organizing a race means doing marketing before doing sport](https://entre2sentiers.com/en/articles/organizing-a-race-means-doing-marketing-before-sport): positioning, target audience and storytelling before the first gunshot.
+- [Race photography, an underrated marketing tool](https://entre2sentiers.com/en/articles/race-photography-an-underrated-marketing-tool): why a race photo is worth more than a souvenir.
+- [What community management could learn from trail running](https://entre2sentiers.com/en/articles/what-community-management-could-learn-from-trail-running): live moments, emotion and storytelling applied to sports events.
+- [Why a race's best ambassadors sometimes wear no bib at all](https://entre2sentiers.com/en/articles/the-ambassadors-who-wear-no-bib): volunteers, locals and associations as community marketing.
+- [Job hunting is a lot like hunting for a race bib](https://entre2sentiers.com/en/articles/job-hunting-is-a-lot-like-hunting-for-a-race-bib): a parallel between sports selection and job hunting.
+- [You don't need to run an ultra to love running](https://entre2sentiers.com/en/articles/you-dont-need-to-run-an-ultra-to-love-running): a more accessible, more human vision of the outdoors.
+- [Portfolio](https://entre2sentiers.com/en/portfolio): photo portfolio, mountain and trail images.
+- [Podcast](https://entre2sentiers.com/en/podcast): Entre 2 sentiers podcast, first episodes coming soon.
+- [Terms](https://entre2sentiers.com/en/terms): terms of use.
