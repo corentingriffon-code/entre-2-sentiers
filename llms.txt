@@ -5,25 +5,25 @@
 ## Pages principales
 
 - [Accueil](https://entre2sentiers.fr/): présentation du projet et des trois piliers.
-- [Réflexions](https://entre2sentiers.fr/blog.html): tous les articles d'analyse marketing appliqués au trail et à l'outdoor.
-- [À propos](https://entre2sentiers.fr/a-propos.html): manifeste, parcours et recherche d'opportunités professionnelles de Corentin Griffon.
-- [Actualités](https://entre2sentiers.fr/actualites.html): dernières publications reprises de LinkedIn.
-- [Contact](https://entre2sentiers.fr/contact.html): coordonnées pour collaborations, missions et opportunités en communication.
+- [Réflexions](https://entre2sentiers.fr/reflexions): tous les articles d'analyse marketing appliqués au trail et à l'outdoor.
+- [À propos](https://entre2sentiers.fr/a-propos): manifeste, parcours et recherche d'opportunités professionnelles de Corentin Griffon.
+- [Actualités](https://entre2sentiers.fr/actualites): dernières publications reprises de LinkedIn.
+- [Contact](https://entre2sentiers.fr/contact): coordonnées pour collaborations, missions et opportunités en communication.
 
 ## Articles
 
-- [L'UTMB doit-il continuer à grandir ?](https://entre2sentiers.fr/articles/lutmb-doit-il-continuer-a-grandir.html): croissance, retombées économiques et pression territoriale, le cas UTMB.
-- [Pourquoi l'UTMB est devenu une machine marketing mondiale](https://entre2sentiers.fr/articles/pourquoi-lutmb-est-devenu-une-machine-marketing.html): comment l'UTMB est devenu une plateforme média et une marque mondiale.
-- [Le brief marketing caché derrière chaque dossard](https://entre2sentiers.fr/articles/le-brief-marketing-cache-derriere-chaque-dossard.html): ce que l'organisation d'une course révèle du parcours client.
-- [Organiser une course, c'est faire du marketing avant de faire du sport](https://entre2sentiers.fr/articles/organiser-une-course-cest-faire-du-marketing-avant-de-faire-du-sport.html): positionnement, cible et storytelling avant le premier coup de sifflet.
-- [La photo de course, outil marketing sous-estimé](https://entre2sentiers.fr/articles/la-photo-de-course-outil-marketing-sous-estime.html): pourquoi une image de course vaut plus qu'un souvenir.
-- [Ce que le community management pourrait apprendre du trail](https://entre2sentiers.fr/articles/ce-que-le-community-management-pourrait-apprendre-du-trail.html): live, émotion et storytelling appliqués à l'événementiel sportif.
-- [Pourquoi les meilleurs ambassadeurs d'une course ne portent parfois aucun dossard](https://entre2sentiers.fr/articles/les-ambassadeurs-qui-ne-portent-aucun-dossard.html): bénévoles, habitants et associations comme marketing communautaire.
-- [Chercher un emploi, c'est un peu comme chercher un dossard](https://entre2sentiers.fr/articles/chercher-un-emploi-chercher-un-dossard.html): parallèle entre sélection sportive et recherche d'emploi.
-- [Pas besoin d'un ultra pour aimer courir](https://entre2sentiers.fr/articles/pas-besoin-dun-ultra-pour-aimer-courir.html): une vision plus accessible et plus humaine de l'outdoor.
+- [L'UTMB doit-il continuer à grandir ?](https://entre2sentiers.fr/articles/lutmb-doit-il-continuer-a-grandir): croissance, retombées économiques et pression territoriale, le cas UTMB.
+- [Pourquoi l'UTMB est devenu une machine marketing mondiale](https://entre2sentiers.fr/articles/pourquoi-lutmb-est-devenu-une-machine-marketing): comment l'UTMB est devenu une plateforme média et une marque mondiale.
+- [Le brief marketing caché derrière chaque dossard](https://entre2sentiers.fr/articles/le-brief-marketing-cache-derriere-chaque-dossard): ce que l'organisation d'une course révèle du parcours client.
+- [Organiser une course, c'est faire du marketing avant de faire du sport](https://entre2sentiers.fr/articles/organiser-une-course-cest-faire-du-marketing-avant-de-faire-du-sport): positionnement, cible et storytelling avant le premier coup de sifflet.
+- [La photo de course, outil marketing sous-estimé](https://entre2sentiers.fr/articles/la-photo-de-course-outil-marketing-sous-estime): pourquoi une image de course vaut plus qu'un souvenir.
+- [Ce que le community management pourrait apprendre du trail](https://entre2sentiers.fr/articles/ce-que-le-community-management-pourrait-apprendre-du-trail): live, émotion et storytelling appliqués à l'événementiel sportif.
+- [Pourquoi les meilleurs ambassadeurs d'une course ne portent parfois aucun dossard](https://entre2sentiers.fr/articles/les-ambassadeurs-qui-ne-portent-aucun-dossard): bénévoles, habitants et associations comme marketing communautaire.
+- [Chercher un emploi, c'est un peu comme chercher un dossard](https://entre2sentiers.fr/articles/chercher-un-emploi-chercher-un-dossard): parallèle entre sélection sportive et recherche d'emploi.
+- [Pas besoin d'un ultra pour aimer courir](https://entre2sentiers.fr/articles/pas-besoin-dun-ultra-pour-aimer-courir): une vision plus accessible et plus humaine de l'outdoor.
 
 ## Optional
 
-- [Portfolio](https://entre2sentiers.fr/portfolio.html): portfolio photo, en cours de constitution.
-- [Podcast](https://entre2sentiers.fr/podcast.html): podcast Entre 2 sentiers, premiers épisodes à venir.
-- [CGU](https://entre2sentiers.fr/cgu.html): conditions générales d'utilisation.
+- [Portfolio](https://entre2sentiers.fr/portfolio): portfolio photo, images de montagne et de terrain.
+- [Podcast](https://entre2sentiers.fr/podcast): podcast Entre 2 sentiers, premiers épisodes à venir.
+- [CGU](https://entre2sentiers.fr/cgu): conditions générales d'utilisation.
