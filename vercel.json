@@ -3,7 +3,8 @@
   "trailingSlash": false,
   "redirects": [
     { "source": "/blog", "destination": "/reflexions", "permanent": true },
-    { "source": "/blog.html", "destination": "/reflexions", "permanent": true }
+    { "source": "/blog.html", "destination": "/reflexions", "permanent": true },
+    { "source": "/en/reflections", "destination": "/en/journal", "permanent": true }
   ],
   "headers": [
     {

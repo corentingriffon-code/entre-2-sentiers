@@ -28,10 +28,11 @@
 The site is also available in English under /en. Same content, same author, translated pages and articles.
 
 - [Home](https://entre2sentiers.com/en): project overview and the three pillars.
-- [Reflections](https://entre2sentiers.com/en/reflections): all marketing analysis articles applied to trail running and the outdoors.
+- [Journal](https://entre2sentiers.com/en/journal): all marketing analysis articles applied to trail running and the outdoors.
 - [About](https://entre2sentiers.com/en/about): manifesto, background and professional opportunities Corentin Griffon is looking for.
 - [News](https://entre2sentiers.com/en/news): latest posts republished from LinkedIn.
 - [Contact](https://entre2sentiers.com/en/contact): contact details for collaborations, assignments and communication opportunities.
+- [Why tourist destinations are chasing trail runners](https://entre2sentiers.com/en/articles/tourist-destinations-are-chasing-trail-runners): territorial marketing, economic spin-offs and the environmental cost of trail running, the Isère case.
 - [Should the UTMB keep growing?](https://entre2sentiers.com/en/articles/should-the-utmb-keep-growing): growth, economic spin-offs and territorial pressure, the UTMB case.
 - [Job hunting is a lot like hunting for a race bib](https://entre2sentiers.com/en/articles/job-hunting-is-a-lot-like-hunting-for-a-race-bib): a parallel between sports selection and job hunting.
 - [You don't need to run an ultra to love running](https://entre2sentiers.com/en/articles/you-dont-need-to-run-an-ultra-to-love-running): a more accessible, more human vision of the outdoors.
