@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Content-Signal: search=yes, ai-train=yes, ai-input=yes
 
-Sitemap: https://entre2sentiers.fr/sitemap.xml
+Sitemap: https://entre2sentiers.com/sitemap.xml
