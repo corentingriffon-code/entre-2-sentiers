@@ -570,8 +570,7 @@ p { margin: 0 0 1.1em; }
 }
 
 .featured-article .tag {
-  margin-bottom: 16px;
-  background: rgba(255,255,255,0.18);
+  display: none;
 }
 
 .featured-article h2 {
