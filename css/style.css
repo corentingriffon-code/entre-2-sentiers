@@ -628,7 +628,7 @@ p { margin: 0 0 1.1em; }
   padding: 170px 0 40px;
 }
 
-.article-hero .tag { margin-bottom: 18px; }
+.article-hero .tag { margin-bottom: 28px; }
 
 .article-meta {
   color: var(--muted);
