@@ -1,6 +1,10 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    { "source": "/blog", "destination": "/reflexions", "permanent": true },
+    { "source": "/blog.html", "destination": "/reflexions", "permanent": true }
+  ],
   "headers": [
     {
       "source": "/(.*)",
