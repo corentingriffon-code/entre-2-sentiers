@@ -76,7 +76,7 @@
   --tan: #d7c9ac;
 
   --ink: var(--dark);
-  --muted: rgba(29, 38, 30, 0.6);
+  --muted: rgba(29, 38, 30, 0.75);
   --paper-line: rgba(29, 38, 30, 0.16);
   --shadow: 0 18px 40px -20px rgba(29, 38, 30, 0.4);
 
