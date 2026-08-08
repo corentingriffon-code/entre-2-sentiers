@@ -1,10 +1,10 @@
 # Entre 2 sentiers
 
-> Site personnel de Corentin Griffon, communicant, photographe et coureur de trail, qui utilise le sport outdoor comme grille de lecture du marketing et de la communication. Trois piliers : Comprendre (analyse marketing), Créer (contenu et photographie), Partager (parcours personnel et recherche d'opportunités en communication dans l'univers outdoor).
+> Entre 2 sentiers est un média outdoor indépendant fondé par Corentin Griffon, communicant, photographe et coureur de trail, qui décrypte les stratégies, les histoires et les enjeux environnementaux qui façonnent l'outdoor. Six terrains d'observation : Outdoor & Territoires, Marques & Communication, Événements, Environnement, Photo & Image, et Les personnes de l'outdoor.
 
 ## Pages principales
 
-- [Accueil](https://entre2sentiers.com/): présentation du projet et des trois piliers.
+- [Accueil](https://entre2sentiers.com/): présentation du projet et des six piliers.
 - [Réflexions](https://entre2sentiers.com/reflexions): tous les articles d'analyse marketing appliqués au trail et à l'outdoor.
 - [À propos](https://entre2sentiers.com/a-propos): manifeste, parcours et recherche d'opportunités professionnelles de Corentin Griffon.
 - [Actualités](https://entre2sentiers.com/actualites): dernières publications reprises de LinkedIn.
@@ -27,7 +27,7 @@
 
 The site is also available in English under /en. Same content, same author, translated pages and articles.
 
-- [Home](https://entre2sentiers.com/en): project overview and the three pillars.
+- [Home](https://entre2sentiers.com/en): project overview and the six pillars.
 - [Journal](https://entre2sentiers.com/en/journal): all marketing analysis articles applied to trail running and the outdoors.
 - [About](https://entre2sentiers.com/en/about): manifesto, background and professional opportunities Corentin Griffon is looking for.
 - [News](https://entre2sentiers.com/en/news): latest posts republished from LinkedIn.
