@@ -593,7 +593,7 @@ p { margin: 0 0 1.1em; }
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-size: 0.78rem;
-  color: var(--lime);
+  color: var(--muted);
   margin-bottom: 40px;
   display: block;
 }
