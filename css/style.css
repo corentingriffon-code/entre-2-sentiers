@@ -660,6 +660,24 @@ p { margin: 0 0 1.1em; }
   padding-left: 20px;
 }
 
+.article-body figure {
+  margin: 2.4em 0;
+}
+
+.article-body figure img {
+  width: 100%;
+  display: block;
+  border-radius: 18px;
+  box-shadow: 0 20px 40px -26px rgba(29,38,30,0.4);
+}
+
+.article-body figcaption {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+}
+
 .article-body p a {
   text-decoration: underline;
   text-underline-offset: 3px;
