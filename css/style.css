@@ -631,6 +631,24 @@ p { margin: 0 0 1.1em; }
 
 .article-hero .tag { margin-bottom: 26px; }
 
+.article-hero-cover {
+  position: relative;
+  background-size: cover;
+  background-position: center;
+}
+
+.article-hero-cover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(29,38,30,0.72) 0%, rgba(29,38,30,0.82) 100%);
+}
+
+.article-hero-cover .wrap {
+  position: relative;
+  z-index: 2;
+}
+
 .article-meta {
   color: var(--muted);
   font-size: 0.95rem;
