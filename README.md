@@ -9,7 +9,6 @@ Site statique en HTML / CSS / JS, sans build ni dépendance : chaque page se mod
 ```
 index.html            Accueil (manifeste court + piliers + derniers articles)
 blog.html              Liste des réflexions (filtrable par pilier)
-actualites.html        Fil de posts (embeds LinkedIn officiels)
 a-propos.html          Manifeste complet, parcours, écosystème LinkedIn/TikTok/Instagram
 portfolio.html          Grille photo (emplacements à remplir)
 contact.html            Contact + liens réseaux
@@ -40,23 +39,6 @@ assets/hero-bg.jpg        Photo de fond du hero d'accueil
 2. Change le `<title>`, la meta `description`, le tag de pilier (`comprendre` / `creer` / `partager`) et le contenu.
 3. Ajoute une carte correspondante dans `blog.html` (et éventuellement `index.html` si tu veux le mettre en avant).
 4. Ajoute son URL dans `sitemap.xml`.
-
-## Ajouter un nouveau post sur la page Actualités
-
-La page `actualites.html` affiche tes publications LinkedIn via le système d'intégration officiel de LinkedIn (pas d'API, pas de scraping, donc rien à maintenir côté technique) :
-
-1. Sur LinkedIn, ouvre ton post publié.
-2. Clique sur "···" en haut à droite du post, puis choisis **"Intégrer cette publication"**.
-3. Copie le code `<iframe>` fourni par LinkedIn.
-4. Dans `actualites.html`, ajoute un nouveau bloc tout en haut de `<div class="news-feed">` :
-   ```html
-   <div class="post-embed">
-     <!-- coller ici le code iframe fourni par LinkedIn -->
-   </div>
-   ```
-5. Le plus récent doit être placé en premier (en haut du fil).
-
-Cette méthode affiche le vrai post LinkedIn (likes, commentaires à jour), mais chaque nouveau post doit être ajouté manuellement, il n'existe pas d'API publique permettant de synchroniser un profil personnel LinkedIn automatiquement.
 
 ## Déploiement
 
