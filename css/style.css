@@ -951,11 +951,12 @@ p { margin: 0 0 1.1em; }
 
 /* ---------- actualités (fil de posts) ---------- */
 .news-feed {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 22px;
   padding: 20px 0 90px;
-  max-width: 700px;
+  max-width: 1120px;
+  align-items: start;
 }
 
 .post-card {
@@ -1285,7 +1286,8 @@ p { margin: 0 0 1.1em; }
   .pillars-grid,
   .article-grid,
   .ecosystem-grid,
-  .timeline-grid { grid-template-columns: 1fr; }
+  .timeline-grid,
+  .news-feed { grid-template-columns: 1fr; }
 
   .portfolio-grid { grid-template-columns: repeat(2, 1fr); }
   .portfolio-grid .wide { grid-column: span 2; }
