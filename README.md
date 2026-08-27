@@ -36,8 +36,8 @@ assets/hero-bg.jpg        Photo de fond du hero d'accueil
 ## Ajouter un nouvel article
 
 1. Duplique un fichier existant dans `articles/`.
-2. Change le `<title>`, la meta `description`, le tag de pilier (`comprendre` / `creer` / `partager`) et le contenu.
-3. Ajoute une carte correspondante dans `blog.html` (et éventuellement `index.html` si tu veux le mettre en avant).
+2. Change le `<title>`, la meta `description`, le pilier (tag + tone parmi les 6 : territoires, marques, evenements, environnement, photo, personnes) et le contenu.
+3. Sur `reflexions.html` (et `en/journal.html` pour l'anglais) : le nouvel article devient la nouvelle "Dernière actualité" (bloc `.featured-article`, en haut de page), et l'ancien featured redescend en première position de la grille `.article-grid` juste en dessous. Le reste de la grille reste trié du plus récent au plus ancien.
 4. Ajoute son URL dans `sitemap.xml`.
 
 ## Déploiement
