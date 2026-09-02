@@ -1660,7 +1660,7 @@ p { margin: 0 0 1.1em; }
 
 /* ---------- FAQ ---------- */
 .faq {
-  padding: 50px 0 90px;
+  padding: 90px 0;
 }
 
 .faq h2 {
@@ -1690,6 +1690,11 @@ p { margin: 0 0 1.1em; }
 }
 
 .faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-item summary::marker {
+  content: "";
   display: none;
 }
 
