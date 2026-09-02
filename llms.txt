@@ -5,7 +5,7 @@
 ## Pages principales
 
 - [Accueil](https://entre2sentiers.com/): présentation du projet et des six piliers.
-- [Actualités](https://entre2sentiers.com/reflexions): tous les articles d'analyse marketing appliqués au trail et à l'outdoor.
+- [Actualités](https://entre2sentiers.com/actualites): tous les articles d'analyse marketing appliqués au trail et à l'outdoor.
 - [À propos](https://entre2sentiers.com/a-propos): manifeste, parcours et recherche d'opportunités professionnelles de Corentin Griffon.
 - [Contact](https://entre2sentiers.com/contact): coordonnées pour collaborations, missions et opportunités en communication.
 
@@ -31,7 +31,7 @@
 The site is also available in English under /en. Same content, same author, translated pages and articles.
 
 - [Home](https://entre2sentiers.com/en): project overview and the six pillars.
-- [News](https://entre2sentiers.com/en/journal): all marketing analysis articles applied to trail running and the outdoors.
+- [News](https://entre2sentiers.com/en/news): all marketing analysis articles applied to trail running and the outdoors.
 - [About](https://entre2sentiers.com/en/about): manifesto, background and professional opportunities Corentin Griffon is looking for.
 - [Contact](https://entre2sentiers.com/en/contact): contact details for collaborations, assignments and communication opportunities.
 - [Why tourist destinations are chasing trail runners](https://entre2sentiers.com/en/articles/tourist-destinations-are-chasing-trail-runners): territorial marketing, economic spin-offs and the environmental cost of trail running, the Isère case.
