@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  var lazyEmbeds = document.querySelectorAll(".post-embed iframe[data-src]");
+  var lazyEmbeds = document.querySelectorAll("iframe[data-src]");
   if (lazyEmbeds.length) {
     if ("IntersectionObserver" in window) {
       var embedObserver = new IntersectionObserver(function (entries, observer) {
