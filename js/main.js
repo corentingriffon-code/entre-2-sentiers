@@ -24,6 +24,31 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  var lazyEmbeds = document.querySelectorAll(".post-embed iframe[data-src]");
+  if (lazyEmbeds.length) {
+    if ("IntersectionObserver" in window) {
+      var embedObserver = new IntersectionObserver(function (entries, observer) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            var frame = entry.target;
+            frame.src = frame.getAttribute("data-src");
+            frame.removeAttribute("data-src");
+            observer.unobserve(frame);
+          }
+        });
+      }, { rootMargin: "300px 0px" });
+
+      lazyEmbeds.forEach(function (frame) {
+        embedObserver.observe(frame);
+      });
+    } else {
+      lazyEmbeds.forEach(function (frame) {
+        frame.src = frame.getAttribute("data-src");
+        frame.removeAttribute("data-src");
+      });
+    }
+  }
+
   var filterBar = document.querySelector(".filter-bar");
   if (filterBar) {
     var buttons = filterBar.querySelectorAll(".filter-btn");
