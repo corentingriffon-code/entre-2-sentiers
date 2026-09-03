@@ -37,8 +37,9 @@ assets/hero-bg.jpg        Photo de fond du hero d'accueil
 
 1. Duplique un fichier existant dans `articles/`.
 2. Change le `<title>`, la meta `description`, le pilier (tag + tone parmi les 6 : territoires, marques, evenements, environnement, photo, personnes) et le contenu.
-3. Sur `actualites.html` (et `en/news.html` pour l'anglais) : le nouvel article devient la nouvelle "Dernière actualité" (bloc `.featured-article`, en haut de page), et l'ancien featured redescend en première position de la grille `.article-grid` juste en dessous. Le reste de la grille reste trié du plus récent au plus ancien.
+3. Sur `actualites.html` (et `en/news.html` pour l'anglais) : le nouvel article devient la nouvelle "Dernière actualité" (bloc `.featured-article`, en haut de page, avec un attribut `data-meta="X min de lecture"` sur ce lien), et l'ancien featured redescend en première position de la grille `.article-grid` juste en dessous. Le reste de la grille reste trié du plus récent au plus ancien.
 4. Ajoute son URL dans `sitemap.xml`.
+5. Rien à faire sur `index.html` / `en/index.html` : le bloc "Sur le fil" de l'accueil se resynchronise tout seul en JS au chargement de la page (`js/main.js`, via `[data-latest-source]`), en relisant `actualites.html` / `en/news.html` pour afficher automatiquement les 3 articles les plus récents (featured + les 2 premiers de la grille). Le contenu statique déjà présent dans `index.html` sert uniquement de repli si JS est indisponible : il vaut mieux le garder à jour, mais ce n'est plus obligatoire pour que le site affiche les bons articles.
 
 ## Déploiement
 

@@ -49,6 +49,109 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  var latestGrid = document.querySelector("[data-latest-source]");
+  if (latestGrid) {
+    var source = latestGrid.getAttribute("data-latest-source");
+
+    var extractUrl = function (bgImage) {
+      var match = /url\((['"]?)(.*?)\1\)/.exec(bgImage || "");
+      return match ? match[2] : "";
+    };
+
+    var cardFromFeatured = function (el) {
+      var tagEl = el.querySelector(".tag");
+      var titleEl = el.querySelector("h2");
+      var excerptEl = el.querySelector(".featured-article-body p");
+      return {
+        href: el.getAttribute("href") || "",
+        image: extractUrl(el.getAttribute("style")),
+        tagClass: tagEl ? tagEl.className.replace("tag", "").trim() : "",
+        tagText: tagEl ? tagEl.textContent : "",
+        title: titleEl ? titleEl.textContent : "",
+        excerpt: excerptEl ? excerptEl.textContent : "",
+        meta: el.getAttribute("data-meta") || ""
+      };
+    };
+
+    var cardFromCard = function (el) {
+      var media = el.querySelector(".card-media");
+      var tagEl = el.querySelector(".tag");
+      var titleEl = el.querySelector("h3");
+      var excerptEl = el.querySelector(".card-excerpt");
+      var metaEl = el.querySelector(".card-meta");
+      return {
+        href: el.getAttribute("href") || "",
+        image: media ? extractUrl(media.getAttribute("style")) : "",
+        tagClass: tagEl ? tagEl.className.replace("tag", "").trim() : "",
+        tagText: tagEl ? tagEl.textContent : "",
+        title: titleEl ? titleEl.textContent : "",
+        excerpt: excerptEl ? excerptEl.textContent : "",
+        meta: metaEl ? metaEl.textContent : ""
+      };
+    };
+
+    var renderLatest = function (items) {
+      if (!items.length) { return; }
+      var frag = document.createDocumentFragment();
+      items.forEach(function (item) {
+        var card = document.createElement("a");
+        card.className = "article-card";
+        card.href = item.href;
+
+        var media = document.createElement("div");
+        media.className = "card-media card-media-photo";
+        media.setAttribute("style", "background-image:url('" + item.image + "');");
+        var mediaSpan = document.createElement("span");
+        mediaSpan.textContent = item.tagText;
+        media.appendChild(mediaSpan);
+
+        var body = document.createElement("div");
+        body.className = "card-body";
+
+        var tag = document.createElement("span");
+        tag.className = "tag " + item.tagClass;
+        tag.textContent = item.tagText;
+
+        var title = document.createElement("h3");
+        title.textContent = item.title;
+
+        var excerpt = document.createElement("p");
+        excerpt.className = "card-excerpt";
+        excerpt.textContent = item.excerpt;
+
+        var meta = document.createElement("p");
+        meta.className = "card-meta";
+        meta.textContent = item.meta;
+
+        body.appendChild(tag);
+        body.appendChild(title);
+        body.appendChild(excerpt);
+        body.appendChild(meta);
+        card.appendChild(media);
+        card.appendChild(body);
+        frag.appendChild(card);
+      });
+      latestGrid.innerHTML = "";
+      latestGrid.appendChild(frag);
+    };
+
+    fetch(source)
+      .then(function (res) { return res.text(); })
+      .then(function (html) {
+        var doc = new DOMParser().parseFromString(html, "text/html");
+        var items = [];
+        var featured = doc.querySelector(".featured-article");
+        if (featured) { items.push(cardFromFeatured(featured)); }
+        doc.querySelectorAll(".article-grid .article-card").forEach(function (el) {
+          if (items.length < 3) { items.push(cardFromCard(el)); }
+        });
+        renderLatest(items.slice(0, 3));
+      })
+      .catch(function () {
+        /* keep the static fallback already in the page */
+      });
+  }
+
   var filterBar = document.querySelector(".filter-bar");
   if (filterBar) {
     var buttons = filterBar.querySelectorAll(".filter-btn");
