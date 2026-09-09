@@ -680,6 +680,36 @@ p { margin: 0 0 1.1em; }
 
 .closing-question p:last-child { margin-bottom: 0; }
 
+.article-sources {
+  margin-top: 2.6em;
+}
+
+.article-body .article-sources ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.article-sources li {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.article-sources a {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(29,38,30,0.35);
+}
+
+.article-sources a:hover {
+  color: var(--dark);
+  text-decoration-color: currentColor;
+}
+
 .author-box {
   max-width: 740px;
   margin: 40px auto 80px;
