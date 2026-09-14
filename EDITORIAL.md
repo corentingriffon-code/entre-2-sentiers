@@ -5,7 +5,7 @@ Calendrier fourni par Corentin (12 semaines, 2 posts/semaine : un sujet de fond 
 | Semaine | Post 1 — sujet de fond | Post 2 — sujet plus spontané | Statut |
 |---|---|---|---|
 | S1 | Le podium fait rêver. Le pratiquant fait acheter. | Réaction à une actualité outdoor | ✅ Publié — `les-marques-ne-devraient-pas-regarder-que-le-podium` |
-| S2 | Et si les bénévoles étaient l'UX d'un événement sportif ? | Réaction à une campagne / influenceur | 📝 Réécrit d'après le post LinkedIn, **pas encore publié** — `benevoles-ux-evenement-sportif` (ex `les-ambassadeurs-qui-ne-portent-aucun-dossard`, renommé) → **prochain à publier** |
+| S2 | Et si les bénévoles étaient l'UX d'un événement sportif ? | Réaction à une campagne / influenceur | ✅ Publié — `benevoles-ux-evenement-sportif` (ex `les-ambassadeurs-qui-ne-portent-aucun-dossard`, renommé) |
 | S3 | Le sponsoring sportif : acheter un logo ou acheter une histoire ? | Réaction à une actualité d'athlète | ✅ Publié — `le-sponsoring-sportif-logo-ou-histoire` |
 | S4 | Qui influence vraiment l'achat d'une paire de chaussures ? | Une innovation produit intéressante | ⬜ Pas encore écrit |
 | S5 | Quand un événement devient une destination touristique | Une campagne ou un visuel outdoor qui mérite d'être analysé | ✅ Publié (thème proche) — `les-territoires-touristiques-courent-apres-les-traileurs` |
@@ -21,10 +21,11 @@ Calendrier fourni par Corentin (12 semaines, 2 posts/semaine : un sujet de fond 
 
 Ces articles existent (`articles/*.html` + `en/articles/*.html`), sont complets (contenu, sources, image de preview), mais ne sont pas encore reliés à `actualites.html` / `en/news.html` ni au `sitemap.xml` :
 
-- `benevoles-ux-evenement-sportif` (ex `les-ambassadeurs-qui-ne-portent-aucun-dossard`) → correspond à **S2**, réécrit d'après le post LinkedIn, prochain candidat à la publication. La version EN (`en/articles/the-ambassadors-who-wear-no-bib.html`) n'a pas été mise à jour avec ce nouvel angle, elle garde encore l'ancien texte.
 - `ce-que-le-community-management-pourrait-apprendre-du-trail`
 - `la-photo-de-course-outil-marketing-sous-estime`
 - `le-brief-marketing-cache-derriere-chaque-dossard`
 - `pourquoi-lutmb-est-devenu-une-machine-marketing`
 
 Pour publier un de ces articles : suivre la procédure "Ajouter un nouvel article" du `README.md` (devient le nouveau featured sur `actualites.html`, l'ancien featured redescend dans la grille, sitemap mis à jour). Il faut aussi choisir une date de publication cohérente avec le tri anti-chronologique du site.
+
+Note : `benevoles-ux-evenement-sportif` (S2) est publié en FR depuis le 14/09/2026, mais sa version EN (`en/articles/the-ambassadors-who-wear-no-bib.html`) garde encore l'ancien texte ("ambassadeurs sans dossard") et n'est pas reliée à `en/news.html`.
