@@ -29,3 +29,9 @@ Ces articles existent (`articles/*.html` + `en/articles/*.html`), sont complets 
 Pour publier un de ces articles : suivre la procédure "Ajouter un nouvel article" du `README.md` (devient le nouveau featured sur `actualites.html`, l'ancien featured redescend dans la grille, sitemap mis à jour). Il faut aussi choisir une date de publication cohérente avec le tri anti-chronologique du site.
 
 Note : `benevoles-ux-evenement-sportif` (S2) est publié en FR depuis le 14/09/2026, mais sa version EN (`en/articles/the-ambassadors-who-wear-no-bib.html`) garde encore l'ancien texte ("ambassadeurs sans dossard") et n'est pas reliée à `en/news.html`.
+
+## Articles hors planning
+
+Certains articles ne correspondent à aucune semaine du calendrier ci-dessus : ce sont des réactions à un événement ponctuel (projection, actualité, post LinkedIn).
+
+- `ecologie-dans-le-trail-question-binaire` — publié le 18/09/2026, en FR uniquement. Réaction à la projection du documentaire sur Blandine L'Hirondel (UTMB, bilan carbone, comparaison avec la Coupe du monde 2026). Pas d'équivalent EN pour l'instant.
