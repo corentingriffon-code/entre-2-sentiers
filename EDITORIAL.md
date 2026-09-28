@@ -15,7 +15,7 @@ Calendrier fourni par Corentin (12 semaines, 2 posts/semaine : un sujet de fond 
 | S9 | Une chaussure peut-elle vraiment être pensée pour être recyclée ? | Réaction à une annonce environnementale | ⬜ Pas encore écrit |
 | S10 | Les marques sont-elles vraiment responsables ? | Analyse d'une campagne de marque | ⬜ Pas encore écrit (à rapprocher de `marques-outdoor-menacees-par-le-changement-climatique`, angle adaptation climat plutôt que "responsabilité") |
 | S11 | Pourquoi les pratiquants ne cherchent pas forcément la performance | Réaction à un contenu d'entraînement / influence | ✅ Publié — `pas-besoin-dun-ultra-pour-aimer-courir` |
-| S12 | Pourquoi certaines marques sont partout sans jamais avoir l'air de faire de publicité | Décryptage d'un contenu viral | ✅ Publié — `marques-outdoor-partout-sans-publicite` (photo provisoire, en attente d'une vraie photo de Corentin) |
+| S12 | Pourquoi certaines marques sont partout sans jamais avoir l'air de faire de publicité | Décryptage d'un contenu viral | ✅ Publié — `marques-outdoor-partout-sans-publicite` |
 
 ## Articles déjà écrits mais pas encore publiés sur le site
 
