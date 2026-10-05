@@ -1,39 +1,63 @@
 # Planning éditorial — Entre 2 sentiers
 
-Calendrier fourni par Corentin (12 semaines, 2 posts/semaine : un sujet de fond pour Entre 2 sentiers, un post plus spontané pour LinkedIn). Sert de référence pour savoir quel article écrire ensuite et éviter les doublons avec ce qui existe déjà.
+## Ligne éditoriale (à partir du 05/10/2026)
 
-| Semaine | Post 1 — sujet de fond | Post 2 — sujet plus spontané | Statut |
-|---|---|---|---|
-| S1 | Le podium fait rêver. Le pratiquant fait acheter. | Réaction à une actualité outdoor | ✅ Publié — `les-marques-ne-devraient-pas-regarder-que-le-podium` |
-| S2 | Et si les bénévoles étaient l'UX d'un événement sportif ? | Réaction à une campagne / influenceur | ✅ Publié — `benevoles-ux-evenement-sportif` (ex `les-ambassadeurs-qui-ne-portent-aucun-dossard`, renommé) |
-| S3 | Le sponsoring sportif : acheter un logo ou acheter une histoire ? | Réaction à une actualité d'athlète | ✅ Publié — `le-sponsoring-sportif-logo-ou-histoire` |
-| S4 | Qui influence vraiment l'achat d'une paire de chaussures ? | Une innovation produit intéressante | ⬜ Pas encore écrit |
-| S5 | Quand un événement devient une destination touristique | Une campagne ou un visuel outdoor qui mérite d'être analysé | ✅ Publié (thème proche) — `les-territoires-touristiques-courent-apres-les-traileurs` |
-| S6 | Peut-on encore faire du sport sans être influencé par les réseaux sociaux ? | Réaction à une polémique / débat | ⬜ Pas encore écrit (à rapprocher éventuellement de `ce-que-le-community-management-pourrait-apprendre-du-trail`, déjà écrit mais angle différent) |
-| S7 | Pourquoi les petits événements outdoor sont peut-être les plus intéressants | Une histoire ou initiative locale | ⬜ Pas encore écrit |
-| S8 | Quand le sportif devient un média | Un chiffre intéressant sur le sport/outdoor | ⬜ Pas encore écrit |
-| S9 | Une chaussure peut-elle vraiment être pensée pour être recyclée ? | Réaction à une annonce environnementale | ⬜ Pas encore écrit |
-| S10 | Les marques sont-elles vraiment responsables ? | Analyse d'une campagne de marque | ⬜ Pas encore écrit (à rapprocher de `marques-outdoor-menacees-par-le-changement-climatique`, angle adaptation climat plutôt que "responsabilité") |
-| S11 | Pourquoi les pratiquants ne cherchent pas forcément la performance | Réaction à un contenu d'entraînement / influence | ✅ Publié — `pas-besoin-dun-ultra-pour-aimer-courir` |
-| S12 | Pourquoi certaines marques sont partout sans jamais avoir l'air de faire de publicité | Décryptage d'un contenu viral | ✅ Publié — `marques-outdoor-partout-sans-publicite` |
+Objectif : environ 2 articles par semaine, jusqu'à fin d'année.
 
-## Articles déjà écrits mais pas encore publiés sur le site
+Mélanger marketing, communication, photo et environnement, en les regardant à travers le sport outdoor au sens large : trail, course à pied, ski, stations de ski, et tout autre sport outdoor (pas seulement le trail).
 
-Ces articles existent (`articles/*.html` + `en/articles/*.html`), sont complets (contenu, sources, image de preview), mais ne sont pas encore reliés à `actualites.html` / `en/news.html` ni au `sitemap.xml` :
+Ne pas se limiter à réagir à l'actualité : se poser aussi des questions de fond sur l'outdoor et toute la communication qui l'entoure (marques, athlètes, événements, territoires), même sans actualité qui le déclenche.
 
-- `ce-que-le-community-management-pourrait-apprendre-du-trail`
-- `la-photo-de-course-outil-marketing-sous-estime`
-- `le-brief-marketing-cache-derriere-chaque-dossard`
-- `pourquoi-lutmb-est-devenu-une-machine-marketing`
+## Backlog actuel
 
-Pour publier un de ces articles : suivre la procédure "Ajouter un nouvel article" du `README.md` (devient le nouveau featured sur `actualites.html`, l'ancien featured redescend dans la grille, sitemap mis à jour). Il faut aussi choisir une date de publication cohérente avec le tri anti-chronologique du site.
+Dans cet ordre, sauf actualité qui ferait passer un sujet devant :
 
-Note : `benevoles-ux-evenement-sportif` (S2) est publié en FR depuis le 14/09/2026, mais sa version EN (`en/articles/the-ambassadors-who-wear-no-bib.html`) garde encore l'ancien texte ("ambassadeurs sans dossard") et n'est pas reliée à `en/news.html`.
+1. **Une chaussure peut-elle vraiment être pensée pour être recyclée ?** — pas encore écrit.
+2. **Les marques sont-elles vraiment responsables ?** — pas encore écrit.
+3. `ce-que-le-community-management-pourrait-apprendre-du-trail` — déjà écrit, pas encore publié sur le site.
+4. `la-photo-de-course-outil-marketing-sous-estime` — déjà écrit, pas encore publié sur le site.
+5. `le-brief-marketing-cache-derriere-chaque-dossard` — déjà écrit, pas encore publié sur le site.
+6. `pourquoi-lutmb-est-devenu-une-machine-marketing` — déjà écrit, pas encore publié sur le site.
 
-## Articles hors planning
+Pour publier un article déjà écrit (3 à 6) : suivre la procédure "Ajouter un nouvel article" du `README.md` (devient le nouveau featured sur `actualites.html`, l'ancien featured redescend dans la grille, sitemap mis à jour). Choisir une date de publication cohérente avec le tri anti-chronologique du site.
 
-Certains articles ne correspondent à aucune semaine du calendrier ci-dessus : ce sont des réactions à un événement ponctuel (projection, actualité, post LinkedIn).
+## En attente du feu vert de Corentin
 
-- `ecologie-dans-le-trail-question-binaire` — publié le 18/09/2026, en FR uniquement. Réaction à la projection du documentaire sur Blandine L'Hirondel (UTMB, bilan carbone, comparaison avec la Coupe du monde 2026). Pas d'équivalent EN pour l'instant.
-- `marque-sponsor-sans-lien-avec-le-sport` — ✅ publié le 02/10/2026, en FR uniquement. Cas Marion Haerty x OnlyFans (elle refuse le plus gros contrat de sa carrière), côté athlète et côté marque (stratégie de diversification d'OnlyFans), lien avec la notion de congruence marque/sponsoring déjà développée dans `le-sponsoring-sportif-logo-ou-histoire`.
-- `sponsoring-sportif-marques-improbables` — ⏸️ **écrit, en attente du feu vert de Corentin avant publication**. Partenariats sportifs improbables : Dacia x UTMB (polémique, retrait du sponsoring-titre), McDonald's aux JO, Burger King x Getafe, Martini en F1. Pourquoi certains partenariats "hors-sujet" tiennent (Martini) et d'autres explosent (Dacia).
+- `sponsoring-sportif-marques-improbables` — écrit (Dacia x UTMB, McDonald's, Burger King, Martini), pas encore publié.
+
+## Articles déjà publiés (pour éviter les doublons de sujet)
+
+- `les-marques-ne-devraient-pas-regarder-que-le-podium`
+- `benevoles-ux-evenement-sportif` (ex `les-ambassadeurs-qui-ne-portent-aucun-dossard`)
+- `le-sponsoring-sportif-logo-ou-histoire`
+- `les-territoires-touristiques-courent-apres-les-traileurs`
+- `pas-besoin-dun-ultra-pour-aimer-courir`
+- `marques-outdoor-partout-sans-publicite`
+- `chercher-un-emploi-chercher-un-dossard`
+- `lutmb-doit-il-continuer-a-grandir`
+- `organiser-une-course-cest-faire-du-marketing-avant-de-faire-du-sport`
+- `qui-sera-le-grand-gagnant-utmb-2026`
+- `marques-outdoor-menacees-par-le-changement-climatique`
+- `ecologie-dans-le-trail-question-binaire` — réaction à la projection du documentaire sur Blandine L'Hirondel.
+- `marque-sponsor-sans-lien-avec-le-sport` — cas Marion Haerty x OnlyFans.
+
+Note : `benevoles-ux-evenement-sportif` est publié en FR, mais sa version EN (`en/articles/the-ambassadors-who-wear-no-bib.html`) garde encore l'ancien texte ("ambassadeurs sans dossard") et n'est pas reliée à `en/news.html`. Les articles publiés hors planning (`ecologie-dans-le-trail-question-binaire`, `marque-sponsor-sans-lien-avec-le-sport`) n'ont pas d'équivalent EN pour l'instant.
+
+## Ancien calendrier (12 semaines, clos)
+
+Premier calendrier fourni par Corentin, remplacé par la ligne éditoriale ci-dessus. Conservé pour mémoire :
+
+| Semaine | Sujet de fond | Statut |
+|---|---|---|
+| S1 | Le podium fait rêver. Le pratiquant fait acheter. | ✅ Publié — `les-marques-ne-devraient-pas-regarder-que-le-podium` |
+| S2 | Et si les bénévoles étaient l'UX d'un événement sportif ? | ✅ Publié — `benevoles-ux-evenement-sportif` |
+| S3 | Le sponsoring sportif : acheter un logo ou acheter une histoire ? | ✅ Publié — `le-sponsoring-sportif-logo-ou-histoire` |
+| S4 | Qui influence vraiment l'achat d'une paire de chaussures ? | ⬜ Abandonné (hors backlog actuel) |
+| S5 | Quand un événement devient une destination touristique | ✅ Publié (thème proche) — `les-territoires-touristiques-courent-apres-les-traileurs` |
+| S6 | Peut-on encore faire du sport sans être influencé par les réseaux sociaux ? | ⬜ Abandonné (hors backlog actuel) |
+| S7 | Pourquoi les petits événements outdoor sont peut-être les plus intéressants | ⬜ Abandonné (hors backlog actuel) |
+| S8 | Quand le sportif devient un média | ⬜ Abandonné (hors backlog actuel) |
+| S9 | Une chaussure peut-elle vraiment être pensée pour être recyclée ? | ⬜ Repris dans le backlog actuel |
+| S10 | Les marques sont-elles vraiment responsables ? | ⬜ Repris dans le backlog actuel |
+| S11 | Pourquoi les pratiquants ne cherchent pas forcément la performance | ✅ Publié — `pas-besoin-dun-ultra-pour-aimer-courir` |
+| S12 | Pourquoi certaines marques sont partout sans jamais avoir l'air de faire de publicité | ✅ Publié — `marques-outdoor-partout-sans-publicite` |
