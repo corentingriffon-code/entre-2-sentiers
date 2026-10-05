@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body { background: var(--dark); }
+
+  .canvas {
+    background-image: url('../assets/onlyfans-snowboard-featured.jpg');
+    background-size: cover;
+    background-position: center;
+    justify-content: flex-end;
+  }
+
+  .canvas::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(29,38,30,0) 0%, rgba(29,38,30,0.15) 45%, rgba(29,38,30,0.92) 100%);
+  }
+
+  .top {
+    position: relative;
+    z-index: 1;
+    padding: 72px 72px 0;
+  }
+
+  .headline {
+    position: relative;
+    z-index: 1;
+    padding: 0 72px;
+    font-family: var(--font-display);
+    color: #fff;
+    font-size: 4.2rem;
+    line-height: 1.06;
+    max-width: 900px;
+    margin-bottom: 36px;
+  }
+
+  .signoff {
+    position: relative;
+    z-index: 1;
+    color: #fff;
+  }
+
+  .tag.comprendre {
+    color: #fff;
+    background: rgba(255,255,255,0.14);
+    border-color: #fff;
+  }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="top">
+      <span class="tag comprendre">Marques</span>
+    </div>
+    <div class="headline">Une marque doit-elle avoir un lien avec le sport qu'elle sponsorise&nbsp;?</div>
+    <div class="signoff">
+      <span class="brand">Entre 2 sentiers</span>
+      <span style="font-family:var(--font-body); font-weight:500; opacity:0.75;">entre2sentiers.com</span>
+    </div>
+  </div>
+</body>
+</html>

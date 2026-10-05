@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body { background: var(--dark); }
+
+  .canvas {
+    background: var(--dark);
+  }
+
+  .top {
+    flex: none;
+    padding: 72px 72px 0;
+  }
+
+  .tag.partager {
+    color: var(--dark);
+  }
+
+  .stat-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 72px;
+    text-align: left;
+  }
+
+  .stat {
+    font-family: var(--font-display);
+    color: var(--lime);
+    font-size: 9rem;
+    line-height: 0.95;
+    letter-spacing: 0.01em;
+  }
+
+  .stat-unit {
+    font-size: 3rem;
+    color: var(--tan);
+    margin-left: 6px;
+  }
+
+  .stat-caption {
+    font-family: var(--font-body);
+    font-weight: 500;
+    color: #fff;
+    font-size: 1.5rem;
+    line-height: 1.4;
+    max-width: 760px;
+    margin-top: 24px;
+  }
+
+  .stat-note {
+    font-family: var(--font-body);
+    color: var(--sage);
+    font-size: 1.1rem;
+    margin-top: 16px;
+  }
+
+  .signoff { color: #fff; }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="top">
+      <span class="tag partager">Environnement</span>
+    </div>
+    <div class="stat-wrap">
+      <div class="stat">18 600<span class="stat-unit">tonnes</span></div>
+      <div class="stat-caption">de CO₂e émises par le HOKA UTMB® Mont-Blanc en 2024 — soit environ 1,6 tonne par coureur.</div>
+      <div class="stat-note">Extrait de « L'écologie dans le trail est-elle vraiment une question binaire ? »</div>
+    </div>
+    <div class="signoff">
+      <span class="brand">Entre 2 sentiers</span>
+      <span style="font-family:var(--font-body); font-weight:500; opacity:0.75;">entre2sentiers.com</span>
+    </div>
+  </div>
+</body>
+</html>

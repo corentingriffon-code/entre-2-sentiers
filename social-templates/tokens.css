@@ -1,0 +1,90 @@
+/* =========================================================
+   Entre 2 sentiers — tokens visuels sociaux
+   Mêmes 4 couleurs et mêmes polices que le site (css/style.css).
+   Canevas de référence : 1080x1080 (post Instagram/LinkedIn/Facebook).
+   ========================================================= */
+
+@font-face {
+  font-family: "Bebas Neue";
+  font-style: normal;
+  font-weight: 400;
+  src: url("../assets/fonts/bebas-neue-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Komentator";
+  font-style: normal;
+  font-weight: 400;
+  src: url("../assets/fonts/komentator.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Caveat";
+  font-style: normal;
+  font-weight: 700;
+  src: url("../assets/fonts/caveat-700.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Work Sans";
+  font-style: normal;
+  font-weight: 500;
+  src: url("../assets/fonts/work-sans-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Work Sans";
+  font-style: normal;
+  font-weight: 600;
+  src: url("../assets/fonts/work-sans-600.woff2") format("woff2");
+}
+
+:root {
+  --dark: #1d261e;
+  --lime: #9faf6b;
+  --sage: #bdc3a9;
+  --tan: #d7c9ac;
+
+  --font-script: "Caveat", cursive;
+  --font-logo: "Komentator", cursive;
+  --font-display: "Bebas Neue", sans-serif;
+  --font-body: "Work Sans", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  width: 1080px;
+  height: 1080px;
+}
+
+.canvas {
+  width: 1080px;
+  height: 1080px;
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-body);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Signature + tag, communs à tous les formats, ancrés en bas */
+.signoff {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 72px 64px;
+}
+.signoff .brand {
+  font-family: var(--font-logo);
+  font-size: 2.1rem;
+}
+.tag {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 8px 20px;
+  border-radius: 100px;
+  border: 1.5px solid currentColor;
+}
+.tag.comprendre { background: rgba(29,38,30,0.08); }
+.tag.creer { background: rgba(159,175,107,0.3); }
+.tag.partager { background: rgba(189,195,169,0.55); }
