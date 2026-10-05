@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  body { background: var(--dark); }
+  .canvas { background: var(--dark); color: #fff; }
+
+  .top { flex: none; display: flex; justify-content: space-between; align-items: flex-start; padding: 64px 64px 0; position: relative; z-index: 2; }
+  .badge { color: var(--tan); border-color: var(--tan); }
+
+  .main { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 64px; position: relative; z-index: 2; }
+  .stat { font-family: var(--font-display); color: var(--lime); font-size: 8.8rem; line-height: 0.9; }
+  .stat .unit { font-size: 2.6rem; color: var(--tan); margin-left: 10px; }
+  .caption { margin-top: 24px; font-family: var(--font-body); font-weight: 600; font-size: 1.6rem; color: #fff; max-width: 780px; }
+  .sub { margin-top: 16px; font-family: var(--font-body); color: var(--sage); font-size: 1.1rem; }
+
+  .signoff { color: #fff; position: relative; z-index: 2; }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="top">
+      <span class="tag partager" style="color:var(--dark);">Environnement</span>
+      <div class="badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2L14 10L22 12L14 14L12 22L10 14L2 12L10 10Z"/></svg>
+        UTMB 2024
+      </div>
+    </div>
+    <div class="main">
+      <div class="stat">18 600<span class="unit">tonnes</span></div>
+      <div class="caption">de CO₂e — le bilan carbone 2024 du HOKA UTMB® Mont-Blanc.</div>
+      <div class="sub">Soit environ 1,6 tonne par coureur.</div>
+    </div>
+    <div class="signoff" style="padding:0 64px 56px; display:flex; align-items:center; justify-content:space-between;">
+      <span class="brand">Entre 2 sentiers</span>
+      <span class="slide-index">3/8</span>
+    </div>
+  </div>
+</body>
+</html>

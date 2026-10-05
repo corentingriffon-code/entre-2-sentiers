@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  body { background: var(--dark); }
+  .canvas { background: var(--dark); color: #fff; }
+
+  .top { flex: none; padding: 64px 64px 0; position: relative; z-index: 2; }
+
+  .main { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 64px; position: relative; z-index: 2; }
+  .headline { font-family: var(--font-display); text-transform: uppercase; font-size: 3.4rem; line-height: 1.04; color: #fff; max-width: 860px; }
+  .headline .mark { color: var(--lime); }
+
+  .cta {
+    margin-top: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--lime);
+    color: var(--dark);
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 1.15rem;
+    letter-spacing: 0.03em;
+    padding: 16px 28px;
+    transform: rotate(-1.2deg);
+    width: fit-content;
+  }
+
+  .signoff { color: #fff; position: relative; z-index: 2; }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="top">
+      <span class="tag partager" style="color:var(--dark);">Environnement</span>
+    </div>
+    <div class="main">
+      <div class="headline">La vraie question n'est pas « <span class="mark">l'UTMB est-il écologique</span> ? »</div>
+      <div class="cta">Article complet → lien en bio</div>
+    </div>
+    <div class="signoff" style="padding:0 64px 56px; display:flex; align-items:center; justify-content:space-between;">
+      <span class="brand">Entre 2 sentiers</span>
+      <span class="slide-index">8/8</span>
+    </div>
+  </div>
+</body>
+</html>

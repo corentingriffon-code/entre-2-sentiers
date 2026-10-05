@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  body { background: var(--lime); }
+  .canvas { background: var(--lime); color: var(--dark); }
+
+  .top { flex: none; padding: 64px 64px 0; position: relative; z-index: 2; }
+
+  .main { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 64px; position: relative; z-index: 2; }
+  .eyebrow { font-family: var(--font-body); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 1.15rem; margin-bottom: 10px; opacity: 0.75; }
+  .big { font-family: var(--font-display); text-transform: uppercase; font-size: 5rem; line-height: 0.98; color: var(--dark); }
+  .crossed { text-decoration: line-through; text-decoration-thickness: 5px; opacity: 0.5; margin-bottom: 18px; }
+
+  .signoff { color: var(--dark); position: relative; z-index: 2; }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="top">
+      <span class="tag partager" style="color:var(--dark); background:rgba(29,38,30,0.1);">Environnement</span>
+    </div>
+    <div class="main">
+      <div class="eyebrow">On ne demande pas</div>
+      <div class="big crossed">La perfection.</div>
+      <div class="big">On demande de mesurer, et d'être transparent.</div>
+    </div>
+    <div class="signoff" style="display:flex; align-items:center; justify-content:space-between;">
+      <span class="brand">Entre 2 sentiers</span>
+      <span class="slide-index">7/8</span>
+    </div>
+  </div>
+</body>
+</html>

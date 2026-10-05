@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  body { background: var(--lime); }
+  .canvas { background: var(--lime); color: var(--dark); }
+
+  .top {
+    flex: none;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 64px 64px 0;
+    position: relative;
+    z-index: 2;
+  }
+  .badge { background: var(--cream); border-color: var(--dark); }
+
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 64px;
+    position: relative;
+    z-index: 2;
+  }
+  .headline {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    color: var(--dark);
+    font-size: 5.4rem;
+    line-height: 0.96;
+    max-width: 900px;
+  }
+  .swipe {
+    margin-top: 32px;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .signoff { color: var(--dark); position: relative; z-index: 2; }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="top">
+      <span class="tag partager" style="color:var(--dark); background:rgba(29,38,30,0.1);">Environnement</span>
+      <div class="badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2L14 10L22 12L14 14L12 22L10 14L2 12L10 10Z"/></svg>
+        ENTRE 2<br>SENTIERS
+      </div>
+    </div>
+    <div class="main">
+      <div class="headline">L'écologie dans le trail, c'est vraiment oui ou non&nbsp;?</div>
+      <div class="swipe">Swipe →</div>
+    </div>
+    <div class="signoff">
+      <span class="brand">Entre 2 sentiers</span>
+      <span class="slide-index">1/8</span>
+    </div>
+  </div>
+</body>
+</html>

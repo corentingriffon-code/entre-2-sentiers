@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  body { background: var(--sage); }
+  .canvas { background: var(--sage); align-items: center; }
+
+  .top { flex: none; width: 100%; padding: 64px 64px 0; position: relative; z-index: 2; }
+  .main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 0 60px; position: relative; z-index: 2; }
+  .card {
+    background: var(--cream);
+    padding: 72px 64px;
+    transform: rotate(-1.2deg);
+    box-shadow: 0 24px 50px -20px rgba(29,38,30,0.5);
+    max-width: 840px;
+  }
+  .quote {
+    font-family: var(--font-script);
+    color: var(--dark);
+    font-size: 4.2rem;
+    line-height: 1.1;
+    text-align: center;
+  }
+  .source {
+    text-align: center;
+    font-family: var(--font-body);
+    font-weight: 600;
+    color: var(--dark);
+    opacity: 0.6;
+    font-size: 1rem;
+    margin-top: 26px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .signoff { width: 100%; color: var(--dark); position: relative; z-index: 2; }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="washi" style="top:46px; left:64px; background:var(--tan);"></div>
+    <div class="top">
+      <span class="tag partager" style="color:var(--dark);">Personnes</span>
+    </div>
+    <div class="main">
+      <div class="card">
+        <div class="quote">« Ce n'est pas binaire. »</div>
+        <div class="source">Mathieu Masbernard, à la sortie du documentaire sur Blandine L'Hirondel</div>
+      </div>
+    </div>
+    <div class="signoff" style="padding:0 64px 56px; display:flex; align-items:center; justify-content:space-between;">
+      <span class="brand">Entre 2 sentiers</span>
+      <span class="slide-index">2/8</span>
+    </div>
+  </div>
+</body>
+</html>

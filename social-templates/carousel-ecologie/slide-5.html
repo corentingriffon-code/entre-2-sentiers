@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  body { background: var(--dark); }
+  .canvas { background: var(--dark); color: #fff; }
+
+  .top { flex: none; padding: 64px 64px 0; position: relative; z-index: 2; }
+
+  .main { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 64px; position: relative; z-index: 2; }
+  .kicker { font-family: var(--font-display); text-transform: uppercase; font-size: 2.6rem; color: var(--lime); margin-bottom: 32px; }
+
+  .signoff { color: #fff; position: relative; z-index: 2; }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="top">
+      <span class="tag partager" style="color:var(--dark);">Environnement</span>
+    </div>
+    <div class="main">
+      <div class="kicker">Mais l'UTMB ne fait pas rien :</div>
+      <ul class="bullets">
+        <li>+30&nbsp;% de chances au tirage au sort si mobilité bas carbone</li>
+        <li>Contribution carbone obligatoire pour les participants</li>
+        <li>500&nbsp;000&nbsp;€/an investis dans 120 bus et 15 lignes</li>
+      </ul>
+    </div>
+    <div class="signoff" style="padding:0 64px 56px; display:flex; align-items:center; justify-content:space-between;">
+      <span class="brand">Entre 2 sentiers</span>
+      <span class="slide-index">5/8</span>
+    </div>
+  </div>
+</body>
+</html>
