@@ -4,15 +4,26 @@
 <meta charset="UTF-8">
 <link rel="stylesheet" href="tokens.css">
 <style>
-  body { background: var(--tan); }
+  body { background: var(--lime); }
 
   .canvas {
-    background: var(--tan);
+    background: var(--lime);
+    color: var(--dark);
   }
 
   .top {
     flex: none;
-    padding: 72px 72px 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 64px 64px 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .badge {
+    background: var(--cream);
+    border-color: var(--dark);
   }
 
   .main {
@@ -20,36 +31,52 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 0 72px;
+    padding: 0 64px;
+    position: relative;
+    z-index: 2;
   }
 
   .headline {
     font-family: var(--font-display);
+    text-transform: uppercase;
     color: var(--dark);
-    font-size: 5.1rem;
-    line-height: 1.04;
-    letter-spacing: 0.01em;
-    max-width: 880px;
+    font-size: 5.6rem;
+    line-height: 0.96;
+    letter-spacing: 0.005em;
+    max-width: 920px;
   }
 
-  .mark {
-    color: var(--lime);
+  .aside {
+    font-family: var(--font-script);
+    font-size: 2rem;
+    color: var(--dark);
+    margin-top: 26px;
+    transform: rotate(-1.4deg);
   }
 
-  .signoff { color: var(--dark); }
+  .signoff { color: var(--dark); position: relative; z-index: 2; }
 </style>
 </head>
 <body>
   <div class="canvas">
+    <div class="washi" style="top:40px; left:300px; background:var(--cream); opacity:0.8;"></div>
+
     <div class="top">
-      <span class="tag partager" style="color:var(--dark);">Environnement</span>
+      <span class="tag partager" style="color:var(--dark); background:rgba(29,38,30,0.1);">Environnement</span>
+      <div class="badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2L14 10L22 12L14 14L12 22L10 14L2 12L10 10Z"/></svg>
+        ENTRE 2<br>SENTIERS
+      </div>
     </div>
+
     <div class="main">
-      <div class="headline">L'écologie dans le trail est-elle vraiment une question <span class="mark">binaire</span>&nbsp;?</div>
+      <div class="headline">L'écologie dans<br>le trail, une question<br>binaire&nbsp;?</div>
+      <div class="aside">Pas vraiment, non.</div>
     </div>
+
     <div class="signoff">
       <span class="brand">Entre 2 sentiers</span>
-      <span style="font-family:var(--font-body); font-weight:500; opacity:0.6;">entre2sentiers.com</span>
+      <span style="font-family:var(--font-body); font-weight:600; opacity:0.7;">entre2sentiers.com</span>
     </div>
   </div>
 </body>

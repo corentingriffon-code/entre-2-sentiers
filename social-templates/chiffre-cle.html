@@ -6,75 +6,113 @@
 <style>
   body { background: var(--dark); }
 
-  .canvas {
-    background: var(--dark);
-  }
+  .canvas { background: var(--dark); color: #fff; }
 
   .top {
     flex: none;
-    padding: 72px 72px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 64px 64px 0;
+    position: relative;
+    z-index: 2;
   }
 
-  .tag.partager {
-    color: var(--dark);
-  }
+  .badge { color: var(--tan); border-color: var(--tan); }
 
-  .stat-wrap {
+  .main {
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 0 72px;
-    text-align: left;
+    padding: 0 64px;
+    position: relative;
+    z-index: 2;
   }
 
   .stat {
     font-family: var(--font-display);
     color: var(--lime);
-    font-size: 9rem;
-    line-height: 0.95;
-    letter-spacing: 0.01em;
+    font-size: 8.4rem;
+    line-height: 0.9;
   }
-
-  .stat-unit {
-    font-size: 3rem;
+  .stat .unit {
+    font-size: 2.6rem;
     color: var(--tan);
-    margin-left: 6px;
+    margin-left: 10px;
   }
 
-  .stat-caption {
+  .callouts {
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .callout-row {
+    display: flex;
+    align-items: center;
+  }
+  .callout-row .dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--lime);
+    flex: none;
+  }
+  .callout-row .line {
+    width: 54px;
+    height: 0;
+    border-top: 2px dotted var(--sage);
+    flex: none;
+    margin: 0 2px;
+  }
+  .callout-row .label {
     font-family: var(--font-body);
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 1.15rem;
     color: #fff;
-    font-size: 1.5rem;
-    line-height: 1.4;
-    max-width: 760px;
-    margin-top: 24px;
   }
 
-  .stat-note {
+  .source {
+    margin-top: 40px;
     font-family: var(--font-body);
     color: var(--sage);
-    font-size: 1.1rem;
-    margin-top: 16px;
+    font-size: 1rem;
   }
 
-  .signoff { color: #fff; }
+  .signoff { color: #fff; position: relative; z-index: 2; }
 </style>
 </head>
 <body>
   <div class="canvas">
     <div class="top">
-      <span class="tag partager">Environnement</span>
+      <span class="tag partager" style="color:var(--dark);">Environnement</span>
+      <div class="badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2L14 10L22 12L14 14L12 22L10 14L2 12L10 10Z"/></svg>
+        UTMB 2024
+      </div>
     </div>
-    <div class="stat-wrap">
-      <div class="stat">18 600<span class="stat-unit">tonnes</span></div>
-      <div class="stat-caption">de CO₂e émises par le HOKA UTMB® Mont-Blanc en 2024 — soit environ 1,6 tonne par coureur.</div>
-      <div class="stat-note">Extrait de « L'écologie dans le trail est-elle vraiment une question binaire ? »</div>
+
+    <div class="main">
+      <div class="stat">18 600<span class="unit">tonnes</span></div>
+
+      <div class="callouts">
+        <div class="callout-row">
+          <span class="dot"></span><span class="line"></span>
+          <span class="label">de CO₂e émises par le HOKA UTMB® Mont-Blanc</span>
+        </div>
+        <div class="callout-row">
+          <span class="dot"></span><span class="line"></span>
+          <span class="label">soit environ 1,6&nbsp;tonne par coureur</span>
+        </div>
+      </div>
+
+      <div class="source">Extrait de « L'écologie dans le trail est-elle vraiment une question binaire ? »</div>
     </div>
-    <div class="signoff">
+
+    <div class="signoff" style="padding:0 64px 56px; display:flex; align-items:center; justify-content:space-between;">
       <span class="brand">Entre 2 sentiers</span>
-      <span style="font-family:var(--font-body); font-weight:500; opacity:0.75;">entre2sentiers.com</span>
+      <span style="font-family:var(--font-body); font-weight:600; opacity:0.75;">entre2sentiers.com</span>
     </div>
   </div>
 </body>

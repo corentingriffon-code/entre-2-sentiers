@@ -1,6 +1,8 @@
 /* =========================================================
    Entre 2 sentiers — tokens visuels sociaux
    Mêmes 4 couleurs et mêmes polices que le site (css/style.css).
+   Traitement "carnet de terrain" : grain, papier découpé, badges,
+   duotone photo, annotations pointillées.
    Canevas de référence : 1080x1080 (post Instagram/LinkedIn/Facebook).
    ========================================================= */
 
@@ -34,12 +36,19 @@
   font-weight: 600;
   src: url("../assets/fonts/work-sans-600.woff2") format("woff2");
 }
+@font-face {
+  font-family: "Work Sans";
+  font-style: normal;
+  font-weight: 700;
+  src: url("../assets/fonts/work-sans-700.woff2") format("woff2");
+}
 
 :root {
   --dark: #1d261e;
   --lime: #9faf6b;
   --sage: #bdc3a9;
   --tan: #d7c9ac;
+  --cream: #f1ead9;
 
   --font-script: "Caveat", cursive;
   --font-logo: "Komentator", cursive;
@@ -65,12 +74,84 @@ html, body {
   flex-direction: column;
 }
 
-/* Signature + tag, communs à tous les formats, ancrés en bas */
+/* Grain — superposé à tous les canevas pour un rendu "carnet de terrain" */
+.canvas::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/></svg>");
+}
+
+/* Photo en duotone (vert sombre de la marque) — deux calques séparés :
+   le filtre grayscale ne doit pas s'appliquer au calque de teinte,
+   sinon il efface lui-même la couleur qu'il vient d'ajouter. */
+.photo-layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: grayscale(1) contrast(1.15) brightness(0.95);
+}
+.photo-tint {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--dark) 15%, var(--lime) 100%);
+  mix-blend-mode: color;
+  opacity: 0.9;
+}
+
+/* Badge circulaire (tampon) */
+.badge {
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  border: 2px dashed currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.25;
+  transform: rotate(-8deg);
+}
+.badge svg { width: 26px; height: 26px; margin-bottom: 2px; }
+
+/* Étiquette "papier découpé" */
+.sticker {
+  background: var(--cream);
+  color: var(--dark);
+  display: inline-block;
+  padding: 22px 30px;
+  box-shadow: 0 14px 30px -12px rgba(0,0,0,0.45);
+  transform: rotate(-1.6deg);
+}
+
+/* Bande "washi tape" */
+.washi {
+  position: absolute;
+  width: 150px;
+  height: 34px;
+  background: var(--lime);
+  opacity: 0.85;
+  transform: rotate(-4deg);
+}
+
+/* Signature + tag, communs à tous les formats */
 .signoff {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 72px 64px;
+  padding: 0 64px 56px;
+  position: relative;
+  z-index: 2;
 }
 .signoff .brand {
   font-family: var(--font-logo);
@@ -84,7 +165,39 @@ html, body {
   padding: 8px 20px;
   border-radius: 100px;
   border: 1.5px solid currentColor;
+  display: inline-block;
 }
 .tag.comprendre { background: rgba(29,38,30,0.08); }
 .tag.creer { background: rgba(159,175,107,0.3); }
 .tag.partager { background: rgba(189,195,169,0.55); }
+
+/* Ligne d'annotation pointillée avec puce + étiquette */
+.callout {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.callout .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--lime);
+  flex: none;
+}
+.callout .line {
+  height: 1px;
+  border-top: 2px dotted var(--lime);
+  flex: none;
+}
+.callout .label {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: #fff;
+  background: rgba(29,38,30,0.72);
+  padding: 7px 14px;
+  border-radius: 100px;
+  white-space: nowrap;
+}

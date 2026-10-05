@@ -1,6 +1,6 @@
 # Templates visuels sociaux — Entre 2 sentiers
 
-4 formats réutilisables pour promouvoir un article sur Instagram, LinkedIn et Facebook. Même palette et mêmes polices que le site (`css/style.css`), canevas de référence 1080×1080 (post carré), compatible tel quel sur IG/FB et recadrable en 1200×627 pour LinkedIn.
+4 formats réutilisables pour promouvoir un article sur Instagram, LinkedIn et Facebook. Même palette et mêmes polices que le site (`css/style.css`), traitement "carnet de terrain" (grain, papier découpé, badges, photo en duotone, annotations pointillées), canevas de référence 1080×1080 (post carré), compatible tel quel sur IG/FB et recadrable en 1200×627 pour LinkedIn.
 
 ## Les 4 formats
 
