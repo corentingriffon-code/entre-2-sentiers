@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  body { background: var(--lime); }
+  .canvas { background: var(--lime); color: var(--dark); }
+
+  .top { flex: none; display: flex; align-items: flex-start; justify-content: space-between; padding: 64px 64px 0; position: relative; z-index: 2; }
+  .badge { background: var(--cream); border-color: var(--dark); }
+
+  .main { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 64px; position: relative; z-index: 2; }
+  .headline { font-family: var(--font-display); text-transform: uppercase; color: var(--dark); font-size: 4.4rem; line-height: 0.98; max-width: 920px; }
+  .aside { font-family: var(--font-script); font-size: 1.9rem; color: var(--dark); margin-top: 24px; transform: rotate(-1.2deg); max-width: 760px; }
+
+  .signoff { color: var(--dark); position: relative; z-index: 2; }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="top">
+      <span class="tag comprendre" style="color:var(--dark); background:rgba(29,38,30,0.1);">Marques</span>
+      <div class="badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2L14 10L22 12L14 14L12 22L10 14L2 12L10 10Z"/></svg>
+        PATAGONIA
+      </div>
+    </div>
+    <div class="main">
+      <div class="headline">Patagonia ne vend presque jamais ses produits.</div>
+      <div class="aside">Elle raconte la même histoire, encore et encore : la réparation plutôt que le rachat.</div>
+    </div>
+    <div class="signoff">
+      <span class="brand">Entre 2 sentiers</span>
+      <span class="slide-index">3/8</span>
+    </div>
+  </div>
+</body>
+</html>

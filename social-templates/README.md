@@ -69,3 +69,18 @@ Instagram est un format court et visuel — pas l'endroit pour le texte long d'u
 Règles pour écrire les slides : une idée par slide, une phrase (deux maximum) par slide, pas de paragraphe. On privilégie les vrais chiffres et vraies citations de l'article plutôt que des reformulations vagues. Chaque slide affiche son numéro (`1/8`, `2/8`...) via `.slide-index`, pour que le compte de slides soit visible en swipant.
 
 Pour un nouvel article : dupliquer `carousel-ecologie/` en `carousel-<slug-de-larticle>/`, choisir 6 à 8 moments forts de l'article (accroche, citation, chiffre, contre-argument, nuance, clôture) et les répartir sur les gabarits ci-dessus. Exporter chaque `slide-N.html` en PNG avec le même script Playwright que ci-dessus, en bouclant sur les fichiers du dossier.
+
+### Variante : couverture photo (slide 1)
+
+`carousel-marques-outdoor/` est un second exemple complet (8 slides), basé sur l'article « Pourquoi certaines marques outdoor sont partout sans jamais avoir l'air de faire de publicité ? ». Sa slide 1 utilise un autre gabarit de couverture, pensé pour une vraie photo plutôt qu'un fond couleur :
+
+- Canevas **portrait 1080×1350** (format recommandé par Instagram pour les posts et carrousels — vertical, pas carré) au lieu de 1080×1080. `html`, `body` et `.canvas` sont redéfinis en haut du fichier pour ce format ; tout le reste des composants (`tag`, `badge`, `signoff`...) fonctionne pareil.
+- Une vraie photo en plein cadre (`.photo-layer` sans le filtre duotone — mettre `filter: none`), un léger dégradé sombre en haut/bas pour la lisibilité (`.shade`).
+- Le logo blanc du site centré en haut (`.logo-mark`, `assets/logo-white.png`).
+- Un titre "manuscrit surligné" : chaque ligne du titre est surlignée individuellement en vert sauge, comme un marqueur (`.script-highlight`, en Caveat).
+- Un sous-titre simple sous le titre, sans surlignage.
+- Un bouton pastille en bas à droite (`.cta-pill`) : fond sombre translucide, bordure blanche, ex. "Lire la suite →".
+
+Les slides 2 à 8 de ce carrousel reprennent les gabarits "fond couleur" habituels (titre, citation, chiffre, comparatif, clôture) au format carré 1080×1080 — seule la couverture change de format et de traitement. Rien n'empêche de mélanger les deux formats dans un même carrousel Instagram : seule la première image compte pour la vignette de couverture dans le fil, les suivantes peuvent être carrées.
+
+Pour réutiliser ce gabarit de couverture avec une autre photo : changer l'URL dans `.photo-layer`, le texte dans `.script-highlight`, et le `.subtitle`. Choisir une photo où la zone basse-gauche (environ le tiers inférieur) est assez dégagée pour que le texte reste lisible.

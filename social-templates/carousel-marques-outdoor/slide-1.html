@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  /* Format portrait 1080x1350, recommandé par Instagram pour les carrousels */
+  html, body { width: 1080px; height: 1350px; background: var(--dark); }
+  .canvas { width: 1080px; height: 1350px; }
+
+  .photo-layer {
+    background-image: url('../../assets/corentin-trail.jpg');
+    background-position: center 40%;
+    filter: none;
+  }
+  .shade {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(180deg, rgba(29,38,30,0.55) 0%, rgba(29,38,30,0.05) 22%, rgba(29,38,30,0.05) 60%, rgba(29,38,30,0.5) 100%);
+  }
+
+  .top {
+    flex: none;
+    position: relative;
+    z-index: 2;
+    padding: 56px 0 0;
+    text-align: center;
+  }
+
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 72px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .subtitle {
+    margin-top: 22px;
+    font-family: var(--font-body);
+    font-weight: 500;
+    color: #fff;
+    font-size: 1.15rem;
+    max-width: 640px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+  }
+
+  .bottom {
+    flex: none;
+    position: relative;
+    z-index: 2;
+    padding: 0 56px 56px;
+    display: flex;
+    justify-content: flex-end;
+  }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="photo-layer"></div>
+    <div class="shade"></div>
+
+    <div class="top">
+      <img class="logo-mark" src="../../assets/logo-white.png" alt="Entre 2 sentiers">
+    </div>
+
+    <div class="main">
+      <div class="script-highlight">
+        <span>Il y a des marques outdoor</span><br>
+        <span>dont on parle sans arrêt.</span>
+      </div>
+      <div class="subtitle">Sans jamais avoir l'impression qu'elles nous vendent quelque chose.</div>
+    </div>
+
+    <div class="bottom">
+      <span class="cta-pill">Lire la suite →</span>
+    </div>
+  </div>
+</body>
+</html>

@@ -233,6 +233,46 @@ html, body {
   margin: 0;
 }
 
+/* Logo blanc centré, pour une couverture photo plein cadre */
+.logo-mark {
+  width: 110px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Titre "manuscrit surligné" sur une photo — chaque ligne a son propre
+   surlignage, comme un marqueur, en Caveat. */
+.script-highlight {
+  font-family: var(--font-script);
+  font-weight: 700;
+  color: #fff;
+  font-size: 3.6rem;
+  line-height: 1.32;
+}
+.script-highlight span {
+  display: inline-block;
+  background: rgba(159,175,107,0.82);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 2px 14px;
+}
+
+/* Bouton pastille, pour un CTA posé sur une photo */
+.cta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(29,38,30,0.55);
+  border: 1.5px solid #fff;
+  border-radius: 100px;
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 12px 24px;
+}
+
 /* Ligne d'annotation pointillée avec puce + étiquette */
 .callout {
   position: absolute;

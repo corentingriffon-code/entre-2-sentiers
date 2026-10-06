@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  body { background: var(--dark); }
+  .canvas { background: var(--dark); color: #fff; }
+
+  .top { flex: none; display: flex; align-items: flex-start; justify-content: space-between; padding: 64px 64px 0; position: relative; z-index: 2; }
+  .badge { color: var(--tan); border-color: var(--tan); }
+
+  .main { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 64px; position: relative; z-index: 2; }
+  .headline { font-family: var(--font-display); text-transform: uppercase; color: #fff; font-size: 4.4rem; line-height: 0.98; max-width: 920px; }
+  .headline .mark { color: var(--lime); }
+  .aside { font-family: var(--font-body); font-weight: 500; font-size: 1.3rem; color: var(--sage); margin-top: 24px; max-width: 740px; }
+
+  .signoff { color: #fff; position: relative; z-index: 2; }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="top">
+      <span class="tag comprendre" style="color:#fff; background:rgba(255,255,255,0.12); border-color:#fff;">Marques</span>
+      <div class="badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2L14 10L22 12L14 14L12 22L10 14L2 12L10 10Z"/></svg>
+        COROS /<br>SALOMON
+      </div>
+    </div>
+    <div class="main">
+      <div class="headline">COROS et Salomon ne parlent <span class="mark">pas au grand public.</span></div>
+      <div class="aside">Elles parlent aux coureurs. Sur le terrain, pas sur un plan média large.</div>
+    </div>
+    <div class="signoff" style="padding:0 64px 56px; display:flex; align-items:center; justify-content:space-between;">
+      <span class="brand">Entre 2 sentiers</span>
+      <span class="slide-index">4/8</span>
+    </div>
+  </div>
+</body>
+</html>
