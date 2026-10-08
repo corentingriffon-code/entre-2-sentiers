@@ -14,10 +14,9 @@ Dans cet ordre, sauf actualité qui ferait passer un sujet devant :
 
 1. **Une chaussure peut-elle vraiment être pensée pour être recyclée ?** — pas encore écrit.
 2. **Les marques sont-elles vraiment responsables ?** — pas encore écrit.
-3. `ce-que-le-community-management-pourrait-apprendre-du-trail` — déjà écrit, pas encore publié sur le site.
-4. `la-photo-de-course-outil-marketing-sous-estime` — déjà écrit, pas encore publié sur le site.
-5. `le-brief-marketing-cache-derriere-chaque-dossard` — déjà écrit, pas encore publié sur le site.
-6. `pourquoi-lutmb-est-devenu-une-machine-marketing` — déjà écrit, pas encore publié sur le site.
+3. `la-photo-de-course-outil-marketing-sous-estime` — déjà écrit, pas encore publié sur le site.
+4. `le-brief-marketing-cache-derriere-chaque-dossard` — déjà écrit, pas encore publié sur le site.
+5. `pourquoi-lutmb-est-devenu-une-machine-marketing` — déjà écrit, pas encore publié sur le site.
 
 Pour publier un article déjà écrit (3 à 6) : suivre la procédure "Ajouter un nouvel article" du `README.md` (devient le nouveau featured sur `actualites.html`, l'ancien featured redescend dans la grille, sitemap mis à jour). Choisir une date de publication cohérente avec le tri anti-chronologique du site.
 
@@ -40,6 +39,7 @@ Pour publier un article déjà écrit (3 à 6) : suivre la procédure "Ajouter u
 - `marques-outdoor-menacees-par-le-changement-climatique`
 - `ecologie-dans-le-trail-question-binaire` — réaction à la projection du documentaire sur Blandine L'Hirondel.
 - `marque-sponsor-sans-lien-avec-le-sport` — cas Marion Haerty x OnlyFans.
+- `ce-que-le-community-management-pourrait-apprendre-du-trail` — publié le 08/10. Version EN déjà écrite (`en/articles/what-community-management-could-learn-from-trail-running`) mais pas encore reliée à `en/news.html` (le site EN a pris du retard sur plusieurs publications FR récentes, à rattraper séparément).
 
 Note : `benevoles-ux-evenement-sportif` est publié en FR, mais sa version EN (`en/articles/the-ambassadors-who-wear-no-bib.html`) garde encore l'ancien texte ("ambassadeurs sans dossard") et n'est pas reliée à `en/news.html`. Les articles publiés hors planning (`ecologie-dans-le-trail-question-binaire`, `marque-sponsor-sans-lien-avec-le-sport`) n'ont pas d'équivalent EN pour l'instant.
 
