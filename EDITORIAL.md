@@ -50,6 +50,7 @@ Pour publier un article déjà écrit (4 à 6) : suivre la procédure "Ajouter u
 - `ecologie-dans-le-trail-question-binaire` — réaction à la projection du documentaire sur Blandine L'Hirondel.
 - `marque-sponsor-sans-lien-avec-le-sport` — cas Marion Haerty x OnlyFans.
 - `ce-que-le-community-management-pourrait-apprendre-du-trail` — publié le 08/10. Version EN déjà écrite (`en/articles/what-community-management-could-learn-from-trail-running`) mais pas encore reliée à `en/news.html` (le site EN a pris du retard sur plusieurs publications FR récentes, à rattraper séparément).
+- `decathlon-ne-signe-plus-des-athletes-mais-des-experts` — publié le 12/10. Sujet hors backlog, proposé directement par Corentin à partir de l'actualité Decathlon (rebrand 2024, partenariats Griezmann/Alex Sarr/Mathieu Blanchard/Blandine L'Hirondel, Grand Raid Kiprun 3 Vallées). Pas d'équivalent EN pour l'instant.
 
 Note : `benevoles-ux-evenement-sportif` est publié en FR, mais sa version EN (`en/articles/the-ambassadors-who-wear-no-bib.html`) garde encore l'ancien texte ("ambassadeurs sans dossard") et n'est pas reliée à `en/news.html`. Les articles publiés hors planning (`ecologie-dans-le-trail-question-binaire`, `marque-sponsor-sans-lien-avec-le-sport`) n'ont pas d'équivalent EN pour l'instant.
 
