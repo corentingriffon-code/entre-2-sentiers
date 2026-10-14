@@ -62,7 +62,7 @@ function isoWeekMonday(code) {
 /* Valeurs collées à la main : on enlève espaces, guillemets et virgule finale */
 const clean = (v) => (v || "").trim().replace(/,$/, "").replace(/^["']|["']$/g, "").trim();
 
-const VERSION = "2026-10-14c";
+const VERSION = "2026-10-14d";
 
 /* Lit une variable d'environnement sans tenir compte des majuscules (GA_Service_account = GA_SERVICE_ACCOUNT) */
 function env(name) {
@@ -75,10 +75,17 @@ function credentials() {
   const raw = (env("GA_SERVICE_ACCOUNT") || "").trim();
   if (raw) {
     let sa;
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    const body = start >= 0 && end > start ? raw.slice(start, end + 1) : `{${raw}}`;
     try {
-      sa = JSON.parse(raw.startsWith("{") ? raw : `{${raw}}`);
+      sa = JSON.parse(body);
     } catch (e) {
-      return { invalid: "GA_SERVICE_ACCOUNT n'est pas un JSON valide : recolle tout le contenu du fichier, de la première { à la dernière }." };
+      // Collage abîmé (retours à la ligne, guillemets…) : on récupère au moins l'adresse et la clé
+      const email = (body.match(/"client_email"\s*:\s*"([^"]+)"/) || [])[1];
+      const key = (body.match(/"private_key"\s*:\s*"(-----BEGIN[\s\S]+?-----END PRIVATE KEY-----(?:\\n|\n)?)"/) || [])[1];
+      if (email && key) sa = { client_email: email, private_key: key.replace(/\\n/g, "\n") };
+      else return { invalid: "GA_SERVICE_ACCOUNT n'est pas lisible : ouvre le fichier .json avec le Bloc-notes, fais Ctrl+A puis Ctrl+C, et colle tout dans la valeur (de la première { à la dernière })." };
     }
     if (sa.type && sa.type !== "service_account") {
       return { invalid: `Le fichier collé dans GA_SERVICE_ACCOUNT est de type « ${sa.type} » : il faut le fichier JSON d'un compte de service (clé créée dans Comptes de service → Clés).` };

@@ -55,7 +55,7 @@ const SITE_FIELDS = [
   ["impressions", "Vues"],
   ["comments", "Commentaires"],
   ["shares", "Partages"],
-  ["clicks", "Clics"],
+  ["likes", "J'aime"],
 ];
 export const statFieldsFor = (network) => (network === "site" ? SITE_FIELDS : STAT_FIELDS);
 

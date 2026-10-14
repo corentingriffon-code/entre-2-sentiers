@@ -722,3 +722,18 @@ body:not([data-screen="sentier"]) .keys-hint { display: none; }
 @media (max-width: 720px) { .article-grid-2 { grid-template-columns: 1fr; } }
 .article-actions [data-siteunpublish] { border-color: rgba(163, 52, 31, 0.4); }
 .article-actions [data-siteunpublish]:hover { background: rgba(163, 52, 31, 0.08); }
+
+/* Tableau de stats à remplir */
+.table-edit td { padding: 5px 6px; }
+.stat-cell { width: 92px; padding: 5px 7px; text-align: right; font-variant-numeric: tabular-nums; }
+.stat-cell:focus { border-color: var(--lime-deep); outline: none; box-shadow: 0 0 0 2px rgba(93, 122, 28, 0.2); }
+.t-link { text-align: left; text-decoration: none; font-weight: 600; font-size: 0.82rem; }
+.t-link:hover { text-decoration: underline; }
+.kind-tag { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 1px 5px; border-radius: 4px; background: var(--lime); color: var(--dark); vertical-align: 1px; }
+.ok-tick { color: var(--lime-deep); font-weight: 700; }
+.tile-input {
+  width: 100%; max-width: 180px; font-family: var(--font-display); font-size: 2.2rem; line-height: 1.05; color: var(--ink);
+  background: rgba(255, 255, 255, 0.6); border: 1px dashed rgba(29, 38, 30, 0.3); border-radius: 8px; padding: 0 8px;
+}
+.tile-input:hover { border-color: var(--lime-deep); }
+.tile-input:focus { outline: none; border-style: solid; border-color: var(--lime-deep); background: #fff; }
