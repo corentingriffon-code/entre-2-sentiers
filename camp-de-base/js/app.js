@@ -10,6 +10,7 @@ import {
   today, addDays, weekStart, parseDate, ymd,
 } from "./game.js";
 import { syncAll } from "./sync.js";
+import { buildArticleHTML, slugify, readMinutes, wordCount, resizePhoto, PILLAR_STYLE } from "./article.js";
 
 const STORE_KEY = "e2s-camp-de-base-v1";
 const $ = (s, root = document) => root.querySelector(s);
@@ -937,12 +938,16 @@ function renderEditor() {
       <label>Notes (sources, angle, visuels…)
         <textarea class="input" name="notes" rows="3">${esc(c.notes)}</textarea>
       </label>
+${c.kind === "article" ? articlePanelHTML(c) : ""}
 
       <div class="editor-pubs">
         <div class="card-head"><p class="eyebrow">Où et quand publier</p></div>
-        <div class="add-pubs">
-          ${NETWORK_ORDER.map((n) => `<button type="button" class="btn btn-ghost btn-sm add-net" data-addnet="${n}" style="--net:${NETWORKS[n].color}">+ ${NETWORKS[n].label}</button>`).join("")}
-          <button type="button" class="btn btn-ghost btn-sm" data-add3>+ Les 3 réseaux</button>
+        <div class="add-pubs" role="group" aria-label="Réseaux de publication">
+          ${NETWORK_ORDER.map((n) => {
+            const on = draft.pubs.some((p) => p.network === n);
+            return `<button type="button" class="btn btn-sm net-toggle ${on ? "is-on" : ""}" data-togglenet="${n}" aria-pressed="${on}" style="--net:${NETWORKS[n].color}" title="${on ? "Retirer" : "Ajouter"} ${NETWORKS[n].label}">${on ? "✓" : "+"} ${NETWORKS[n].label}</button>`;
+          }).join("")}
+          ${SOCIALS.every((n) => draft.pubs.some((p) => p.network === n)) ? "" : `<button type="button" class="btn btn-ghost btn-sm" data-add3>+ Les 3 réseaux</button>`}
         </div>
         <div id="pub-rows">${draft.pubs.map(pubRowHTML).join("") || `<p class="empty">Pas encore de publication prévue. Ajoute un réseau (+${XP.pubPlanned} m chacune).</p>`}</div>
       </div>
@@ -955,6 +960,224 @@ function renderEditor() {
       </footer>
     </form>`;
   updateCharCount(limits);
+}
+
+/* ---------- Rédaction et publication d'un article sur le site ---------- */
+
+let publishConfig = null;
+async function loadPublishConfig() {
+  if (publishConfig) return publishConfig;
+  try {
+    const r = await fetch("/api/camp/publish", { cache: "no-store" });
+    publishConfig = r.ok ? await r.json() : { configured: false, missing: [] };
+  } catch (e) {
+    publishConfig = { configured: false, missing: [] };
+  }
+  return publishConfig;
+}
+
+const art = (c) => (c.article ||= { excerpt: "", body: "", question: "", sources: "", slug: "", photo: {} });
+/* Un article déjà présent sur le site mais créé avant le Camp de base ne doit pas être écrasé */
+const legacyArticle = (c) => !!c.slug && !c.article?.publishedAt && pubsOf(c.id).some((p) => p.network === "site" && p.status === "publie");
+
+function articlePanelHTML(c) {
+  const a = art(c);
+  const ph = a.photo || {};
+  const src = ph.data || (ph.file ? `/assets/${ph.file}` : "");
+  const slug = a.slug || c.slug || slugify(c.title);
+  const excerptLen = (a.excerpt || "").length;
+  const words = wordCount(a.body);
+  const legacy = legacyArticle(c);
+  const cfg = publishConfig;
+  return `
+      <details class="article-panel" open>
+        <summary><span>Rédaction de l'article</span><span class="muted small">${words} mots · ${readMinutes(a.body)} min de lecture${a.publishedAt ? ` · en ligne depuis le ${fmtDate(a.publishedAt)}` : ""}</span></summary>
+
+        <div class="photo-slot ${src ? "has-photo" : ""}">
+          ${src
+            ? `<img src="${src}" alt="">
+               <div class="photo-actions">
+                 <label class="btn btn-ghost btn-sm">Changer la photo<input type="file" accept="image/*" data-photo hidden></label>
+                 <button type="button" class="btn btn-ghost btn-sm" data-photo-remove>Retirer</button>
+               </div>`
+            : `<label class="photo-empty">
+                 <span class="photo-icon" aria-hidden="true">📷</span>
+                 <strong>Ajouter la photo de une</strong>
+                 <span class="muted small">Elle s'affiche en haut de l'article et sur la page Actualités. Format paysage conseillé.</span>
+                 <input type="file" accept="image/*" data-photo hidden>
+               </label>`}
+        </div>
+        <div class="article-grid-2">
+          <label>Description de la photo (pour l'accessibilité)<input class="input" name="a-alt" value="${esc(ph.alt)}" placeholder="Ex. : coureurs sur la ligne de départ à Chamonix"></label>
+          <label>Crédit photo<input class="input" name="a-credit" value="${esc(ph.credit)}" placeholder="Ex. : Corentin Griffon"></label>
+        </div>
+
+        <label>Chapô (résumé affiché sur la page Actualités et dans Google)
+          <textarea class="input" name="a-excerpt" rows="2" maxlength="240" placeholder="Une ou deux phrases qui donnent envie de lire.">${esc(a.excerpt)}</textarea>
+          <span class="char-count"><span class="${excerptLen > 160 ? "is-over" : ""}">${excerptLen}</span> / 160 caractères conseillés</span>
+        </label>
+        <label>Adresse de l'article
+          <span class="slug-field"><span class="muted">entre2sentiers.com/articles/</span><input class="input" name="a-slug" value="${esc(slug)}" ${a.publishedAt || legacy ? "readonly" : ""}></span>
+        </label>
+        <label>Texte de l'article
+          <textarea class="input article-body-input" name="a-body" rows="16" placeholder="Écris ton article ici.
+
+## Un intertitre
+
+Un paragraphe, avec du **gras**, de l'*italique* et un [lien](https://exemple.com).
+
+> Une citation mise en avant.
+
+- un point de liste">${esc(a.body)}</textarea>
+          <span class="muted small">Mise en forme : <code>## Intertitre</code> · <code>**gras**</code> · <code>*italique*</code> · <code>&gt; citation</code> · <code>- liste</code> · <code>[texte](https://lien)</code>. Laisse une ligne vide entre deux paragraphes.</span>
+        </label>
+        <label>Question de fin (facultatif)
+          <input class="input" name="a-question" value="${esc(a.question)}" placeholder="Et vous, … ?">
+        </label>
+        <label>Sources (une par ligne : Titre | https://lien)
+          <textarea class="input" name="a-sources" rows="3" placeholder="Le Monde, article sur… | https://www.lemonde.fr/…">${esc(a.sources)}</textarea>
+        </label>
+
+        <div class="article-actions">
+          <button type="button" class="btn btn-ghost" data-preview>👁 Aperçu</button>
+          ${legacy
+            ? `<p class="muted small">Cet article a été publié avant le Camp de base : pour ne pas l'écraser, sa mise à jour se fait comme avant.</p>`
+            : `<button type="button" class="btn btn-primary" data-sitepublish>${a.publishedAt ? "Mettre à jour sur le site" : "🚀 Publier sur le site"}</button>`}
+          ${cfg && !cfg.configured ? `<p class="sync-missing">Publication pas encore configurée sur Vercel${cfg.missing?.length ? ` : ${cfg.missing.join(", ")}` : ""} (voir CONNEXIONS.md).</p>` : ""}
+        </div>
+      </details>`;
+}
+
+function readArticleForm(f) {
+  const c = draft.content;
+  if (c.kind !== "article" || !f.elements.namedItem("a-body")) return;
+  const a = art(c);
+  const v = (n) => f.elements.namedItem(n)?.value ?? "";
+  a.excerpt = v("a-excerpt").trim();
+  a.body = v("a-body");
+  a.question = v("a-question").trim();
+  a.sources = v("a-sources");
+  if (!a.publishedAt) a.slug = slugify(v("a-slug")) || slugify(c.title);
+  a.photo = { ...(a.photo || {}), alt: v("a-alt").trim(), credit: v("a-credit").trim() };
+}
+
+function relatedFor(c) {
+  const mine = art(c).slug;
+  return state.contents
+    .filter((x) => x.id !== c.id && x.status === "publie" && (x.article?.slug || x.slug) && (x.article?.slug || x.slug) !== mine)
+    .map((x) => ({ x, d: keyDate(x) }))
+    .sort((p, q) => (p.x.pillar === c.pillar ? 0 : 1) - (q.x.pillar === c.pillar ? 0 : 1) || q.d.localeCompare(p.d))
+    .slice(0, 3)
+    .map(({ x }) => ({ slug: x.article?.slug || x.slug, title: x.title, pillar: x.pillar, photo: x.article?.photo?.file || "" }));
+}
+
+function articleData(c, { preview }) {
+  const a = art(c);
+  const date = a.publishedAt || today();
+  const ph = a.photo || {};
+  const hasPhoto = !!(ph.data || ph.file);
+  return {
+    slug: a.slug,
+    title: c.title,
+    excerpt: a.excerpt,
+    pillar: c.pillar || "marques",
+    body: a.body,
+    question: a.question,
+    sources: a.sources,
+    date,
+    modified: today(),
+    photo: hasPhoto
+      ? { src: preview && ph.data ? ph.data : `../assets/${a.slug}-featured.jpg`, file: `${a.slug}-featured.jpg`, alt: ph.alt, credit: ph.credit }
+      : null,
+    related: relatedFor(c),
+  };
+}
+
+function articleProblems(c) {
+  const a = art(c);
+  const out = [];
+  if (!c.title) out.push("le titre");
+  if (!c.pillar) out.push("le pilier");
+  if (!a.excerpt) out.push("le chapô");
+  if (wordCount(a.body) < 80) out.push("le texte (au moins 80 mots)");
+  if (!a.slug) out.push("l'adresse");
+  return out;
+}
+
+function openPreview() {
+  readEditorForm();
+  const c = draft.content;
+  const d = $("#preview");
+  d.innerHTML = `<div class="preview-bar"><span>Aperçu de l'article tel qu'il apparaîtra sur le site</span><button type="button" class="btn btn-ghost btn-sm" data-preview-close>Fermer</button></div><iframe class="preview-frame" title="Aperçu de l'article"></iframe>`;
+  d.querySelector("iframe").srcdoc = buildArticleHTML(articleData(c, { preview: true }), { preview: true });
+  d.showModal();
+}
+document.addEventListener("click", (e) => {
+  if (e.target.closest("[data-preview-close]")) $("#preview").close();
+});
+
+async function publishArticle(btn) {
+  readEditorForm();
+  const c = draft.content;
+  const problems = articleProblems(c);
+  if (problems.length) return toast(`Il manque : ${problems.join(", ")}`, "warn");
+  const cfg = await loadPublishConfig();
+  if (!cfg.configured) return toast("La publication n'est pas encore configurée sur Vercel.", "warn");
+
+  let code = "";
+  try { code = localStorage.getItem(STORE_KEY + ":publish") || ""; } catch (e) { /* rien */ }
+  if (!code) code = (prompt("Code de publication (celui que tu as choisi sur Vercel) :") || "").trim();
+  if (!code) return;
+
+  const a = art(c);
+  if (!a.publishedAt && !confirm(`Publier « ${c.title} » sur entre2sentiers.com ?\nIl deviendra la « Dernière actualité » du site.`)) return;
+
+  const data = articleData(c, { preview: false });
+  const st = PILLAR_STYLE[data.pillar];
+  btn.disabled = true;
+  btn.textContent = "Publication…";
+  try {
+    const r = await fetch("/api/camp/publish", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        code,
+        slug: a.slug,
+        html: buildArticleHTML(data),
+        title: c.title,
+        excerpt: a.excerpt,
+        minutes: readMinutes(a.body),
+        tag: st.tag,
+        label: st.label,
+        date: data.date,
+        image: a.photo?.data || "",
+        imageFile: a.photo?.file || "",
+      }),
+    });
+    const j = await r.json().catch(() => ({ ok: false, error: `Erreur ${r.status}` }));
+    if (j.badCode) {
+      try { localStorage.removeItem(STORE_KEY + ":publish"); } catch (e) { /* rien */ }
+      throw new Error("Code de publication incorrect.");
+    }
+    if (!j.ok) throw new Error(j.error || "Publication impossible.");
+    try { localStorage.setItem(STORE_KEY + ":publish", code); } catch (e) { /* rien */ }
+
+    // Le contenu passe en « Publié » avec sa publication Site
+    if (!a.publishedAt) a.publishedAt = data.date;
+    if (a.photo?.data) { a.photo.file = j.imageFile; delete a.photo.data; }
+    c.slug = a.slug;
+    let site = draft.pubs.find((p) => p.network === "site");
+    if (!site) { site = newPub("site", data.date); draft.pubs.push(site); }
+    site.status = "publie";
+    site.date = site.date || data.date;
+    site.url = j.url;
+    toast(j.isNew ? "Article publié ! Il sera en ligne dans environ 1 minute." : "Article mis à jour sur le site.", "xp");
+    commitEditor({ fromPublish: true });
+  } catch (err) {
+    toast(err.message, "warn");
+    btn.disabled = false;
+    btn.textContent = a.publishedAt ? "Mettre à jour sur le site" : "🚀 Publier sur le site";
+  }
 }
 
 function updateCharCount(limits) {
@@ -977,6 +1200,7 @@ function readEditorForm() {
   c.status = val("cstatus");
   c.text = val("text");
   c.notes = val("notes");
+  readArticleForm(f);
   $$(".pub-row", f).forEach((row) => {
     const p = draft.pubs[Number(row.dataset.i)];
     p.date = row.querySelector('[name="date"]').value;
@@ -1011,6 +1235,7 @@ function openEditor(contentId, { date = "", focusPub = null } = {}) {
   renderEditor();
   tooltip.hidden = true;
   editor.showModal();
+  if (content.kind === "article" && !publishConfig) loadPublishConfig().then(() => draft && draft.content.id === content.id && (readEditorForm(), renderEditor()));
   if (focusPub) {
     const row = $(`#pubrow-${focusPub}`);
     if (row) {
@@ -1067,7 +1292,16 @@ editor.addEventListener("click", (e) => {
     draft.pubs.push(newPub(n, d));
     renderEditor();
   };
-  if (tgt.dataset.addnet) add(tgt.dataset.addnet);
+  if (tgt.dataset.togglenet) {
+    const n = tgt.dataset.togglenet;
+    const i = draft.pubs.findIndex((p) => p.network === n);
+    if (i < 0) return add(n);
+    const p = draft.pubs[i];
+    if ((p.status === "publie" || hasStats(p)) && !confirm(`Retirer la publication ${NETWORKS[n].label} ? Elle est déjà publiée ou a des stats.`)) return;
+    readEditorForm();
+    draft.pubs.splice(i, 1);
+    renderEditor();
+  }
   else if (tgt.hasAttribute("data-add3")) {
     readEditorForm();
     const d = draft.pubs.find((p) => p.date)?.date || "";
@@ -1082,6 +1316,15 @@ editor.addEventListener("click", (e) => {
     const p = draft.pubs[Number(tgt.dataset.publish)];
     p.status = "publie";
     if (!p.date || p.date > today()) p.date = today();
+    renderEditor();
+  } else if (tgt.hasAttribute("data-preview")) {
+    openPreview();
+  } else if (tgt.hasAttribute("data-sitepublish")) {
+    publishArticle(tgt);
+  } else if (tgt.hasAttribute("data-photo-remove")) {
+    readEditorForm();
+    const a = art(draft.content);
+    a.photo = { alt: a.photo?.alt || "", credit: a.photo?.credit || "" };
     renderEditor();
   } else if (tgt.hasAttribute("data-delete")) {
     if (confirm(`Supprimer « ${draft.content.title || "ce contenu"} » et ses publications ?`)) {
@@ -1099,6 +1342,28 @@ editor.addEventListener("submit", (e) => {
 });
 editor.addEventListener("input", (e) => {
   if (e.target.name === "text") updateCharCount();
+  if (e.target.name === "a-excerpt") {
+    const n = e.target.value.length;
+    const out = e.target.parentElement.querySelector(".char-count span");
+    if (out) { out.textContent = n; out.classList.toggle("is-over", n > 160); }
+  }
+});
+editor.addEventListener("change", async (e) => {
+  if (!draft) return;
+  if (e.target.name === "kind") {
+    readEditorForm();
+    renderEditor();
+    if (draft.content.kind === "article") loadPublishConfig().then(() => draft && renderEditor());
+  }
+  if (e.target.matches("[data-photo]") && e.target.files[0]) {
+    readEditorForm();
+    try {
+      art(draft.content).photo.data = await resizePhoto(e.target.files[0]);
+    } catch (err) {
+      toast("Cette image n'a pas pu être lue.", "warn");
+    }
+    if (draft) renderEditor();
+  }
 });
 editor.addEventListener("close", () => {
   draft = null;
