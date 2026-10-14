@@ -3,6 +3,8 @@
    - GA_PROPERTY_ID   identifiant numérique de la propriété GA4 (ex. 412345678)
    - GA_CLIENT_EMAIL  e-mail du compte de service Google Cloud
    - GA_PRIVATE_KEY   clé privée du compte de service (les \n peuvent rester échappés)
+   Variante plus simple : GA_SERVICE_ACCOUNT = tout le contenu du fichier JSON téléchargé
+   (remplace GA_CLIENT_EMAIL et GA_PRIVATE_KEY).
    Le compte de service doit être ajouté en « Lecteur » sur la propriété GA4. */
 
 const crypto = require("node:crypto");
@@ -24,7 +26,15 @@ async function googleToken(email, key) {
     body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: `${unsigned}.${sig}` }),
   });
   const j = await r.json();
-  if (!r.ok) throw new Error(`Connexion Google refusée : ${j.error_description || j.error || r.status}`);
+  if (!r.ok) {
+    const why = j.error_description || j.error || r.status;
+    const hint = /account not found/i.test(why)
+      ? " → l'adresse du robot (GA_CLIENT_EMAIL) ne correspond à aucun compte de service : vérifie qu'elle finit par iam.gserviceaccount.com et qu'elle vient du même fichier JSON que la clé."
+      : /invalid_grant|signature/i.test(why)
+        ? " → la clé privée (GA_PRIVATE_KEY) ne correspond pas : recopie-la depuis le même fichier JSON."
+        : "";
+    throw new Error(`Connexion Google refusée : ${why}${hint}`);
+  }
   return j.access_token;
 }
 
@@ -49,19 +59,34 @@ function isoWeekMonday(code) {
   return monday.toISOString().slice(0, 10);
 }
 
+/* Valeurs collées à la main : on enlève espaces, guillemets et virgule finale */
+const clean = (v) => (v || "").trim().replace(/,$/, "").replace(/^["']|["']$/g, "").trim();
+
+function credentials() {
+  const json = clean(process.env.GA_SERVICE_ACCOUNT);
+  if (json) {
+    try {
+      const sa = JSON.parse(json.startsWith("{") ? json : `{${json}}`);
+      return { email: sa.client_email, key: sa.private_key };
+    } catch (e) { /* on retombe sur les variables séparées */ }
+  }
+  return { email: clean(process.env.GA_CLIENT_EMAIL), key: clean(process.env.GA_PRIVATE_KEY).replace(/\\n/g, "\n") };
+}
+
 module.exports = async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  const { GA_PROPERTY_ID, GA_CLIENT_EMAIL, GA_PRIVATE_KEY } = process.env;
-  if (!GA_PROPERTY_ID || !GA_CLIENT_EMAIL || !GA_PRIVATE_KEY) return res.status(200).json({ configured: false });
+  const property = clean(process.env.GA_PROPERTY_ID).replace(/^properties\//, "");
+  const { email, key } = credentials();
+  if (!property || !email || !key) return res.status(200).json({ configured: false });
   try {
-    const token = await googleToken(GA_CLIENT_EMAIL, GA_PRIVATE_KEY.replace(/\\n/g, "\n"));
+    const token = await googleToken(email, key);
     const [weeks, pages] = await Promise.all([
-      report(token, GA_PROPERTY_ID, {
+      report(token, property, {
         dateRanges: [{ startDate: "112daysAgo", endDate: "today" }],
         dimensions: [{ name: "isoYearIsoWeek" }],
         metrics: [{ name: "activeUsers" }, { name: "screenPageViews" }],
       }),
-      report(token, GA_PROPERTY_ID, {
+      report(token, property, {
         dateRanges: [{ startDate: "365daysAgo", endDate: "today" }],
         dimensions: [{ name: "pagePath" }],
         metrics: [{ name: "screenPageViews" }],

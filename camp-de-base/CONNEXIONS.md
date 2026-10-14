@@ -35,7 +35,14 @@ Sur https://vercel.com → projet **entre-2-sentiers** → **Settings** → **En
 | `GA_CLIENT_EMAIL` | la valeur de `client_email` du fichier JSON |
 | `GA_PRIVATE_KEY` | la valeur de `private_key` du fichier JSON (tout le bloc, de `-----BEGIN` à `END PRIVATE KEY-----`) |
 
+**Plus simple** : au lieu de `GA_CLIENT_EMAIL` et `GA_PRIVATE_KEY`, tu peux créer une seule variable `GA_SERVICE_ACCOUNT` et y coller **tout le contenu du fichier JSON** (ouvre-le avec le Bloc-notes, Ctrl+A, Ctrl+C). Supprime alors les deux autres pour éviter les mélanges.
+
 Puis **Deployments** → sur le dernier déploiement, **⋯ → Redeploy** pour que les variables soient prises en compte.
+
+**Si la puce affiche « erreur »** :
+- *account not found* : l'adresse du robot est fausse (faute de frappe, ton adresse perso à la place de celle du robot, robot supprimé) ou vient d'un autre fichier que la clé. Le plus sûr : utiliser `GA_SERVICE_ACCOUNT` avec tout le fichier.
+- *Invalid JWT signature* : la clé privée ne correspond pas au robot. Recrée une clé et recolle-la.
+- *User does not have sufficient permissions* : le robot n'a pas été invité en Lecteur dans Google Analytics (étape B), ou l'ID de propriété est faux.
 
 ---
 
