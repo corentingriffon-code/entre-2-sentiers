@@ -72,3 +72,35 @@ Pas besoin de faire valider l'app par Meta : tant que c'est ton propre compte, l
 ## Confidentialité
 
 Le Camp de base n'est lié nulle part et n'est pas indexé par les moteurs de recherche, mais il n'a pas de mot de passe : quelqu'un qui connaît l'adresse peut l'ouvrir et voir les chiffres renvoyés par `/api/camp/site` et `/api/camp/instagram`. Tes contenus, tâches et notes, eux, restent dans ton navigateur. Les clés Google et Instagram ne sont jamais envoyées à la page.
+
+---
+
+## 3. Publier les articles sur le site depuis le Camp de base : environ 5 minutes
+
+Le bouton **🚀 Publier sur le site** (dans la fiche d'un contenu de format « Article ») dépose l'article sur GitHub ; Vercel le met en ligne tout seul environ une minute plus tard. Il faut deux variables.
+
+**A. Une clé GitHub limitée à ton site**
+
+1. Va sur https://github.com/settings/personal-access-tokens/new (GitHub → ta photo → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**).
+2. **Token name** : `camp-de-base`. **Expiration** : 1 an (note la date dans ton Mémo pour la renouveler).
+3. **Repository access** → **Only select repositories** → choisis **entre-2-sentiers**.
+4. **Permissions** → **Repository permissions** → **Contents** → **Read and write**. Ne touche à rien d'autre.
+5. **Generate token**, puis copie la clé (elle commence par `github_pat_`). Elle ne s'affiche qu'une fois.
+
+**B. Les deux variables sur Vercel** (*Settings → Environment Variables*, case *Production* cochée)
+
+| Nom | Valeur |
+|---|---|
+| `GITHUB_TOKEN` | la clé GitHub copiée |
+| `PUBLISH_CODE` | un code que tu inventes (par exemple une phrase de passe) : il sera demandé à la première publication, puis ton navigateur s'en souvient |
+
+Puis **Deployments → ⋯ → Redeploy**.
+
+Le code de publication est important : le Camp de base n'a pas de mot de passe, c'est ce code qui empêche quelqu'un d'autre de publier sur ton site.
+
+**Ce que fait la publication**
+- crée `articles/<adresse>.html` avec la mise en page des autres articles, et la photo de une dans `assets/` ;
+- met l'article en « Dernière actualité » sur la page Actualités (l'ancienne descend en tête de la grille) ;
+- l'ajoute au plan du site (`sitemap.xml`) ; l'accueil se met à jour tout seul.
+- « Mettre à jour sur le site » republie un article créé depuis le Camp de base. Un article écrit avant le Camp de base n'est jamais écrasé.
+- La version anglaise n'est pas créée automatiquement.

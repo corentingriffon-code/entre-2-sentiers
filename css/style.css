@@ -637,6 +637,28 @@ p { margin: 0 0 1.1em; }
   margin-top: 18px;
 }
 
+/* Photo de une d'un article (articles publiés depuis le Camp de base) */
+.article-figure {
+  max-width: 900px;
+  margin: 40px auto 0;
+  padding: 0 24px;
+}
+.article-figure img {
+  width: 100%;
+  height: auto;
+  max-height: 560px;
+  object-fit: cover;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+.article-figure figcaption {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-align: right;
+}
+.article-figure + .article-body { padding-top: 36px; }
+
 .article-body {
   max-width: 740px;
   margin: 0 auto;
