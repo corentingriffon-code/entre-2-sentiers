@@ -981,6 +981,58 @@ const art = (c) => (c.article ||= { excerpt: "", body: "", question: "", sources
 /* Un article déjà présent sur le site mais créé avant le Camp de base ne doit pas être écrasé */
 const legacyArticle = (c) => !!c.slug && !c.article?.publishedAt && pubsOf(c.id).some((p) => p.network === "site" && p.status === "publie");
 
+const onSite = (c) => !!(c.article?.slug || c.slug) && pubsOf(c.id).some((p) => p.network === "site" && p.status === "publie");
+
+/* Code de publication : demandé une fois, puis gardé dans ce navigateur */
+function getPublishCode() {
+  let code = "";
+  try { code = localStorage.getItem(STORE_KEY + ":publish") || ""; } catch (e) { /* rien */ }
+  if (!code) code = (prompt("Code de publication (celui que tu as choisi sur Vercel) :") || "").trim();
+  return code;
+}
+function rememberPublishCode(code, ok) {
+  try {
+    if (ok) localStorage.setItem(STORE_KEY + ":publish", code);
+    else localStorage.removeItem(STORE_KEY + ":publish");
+  } catch (e) { /* rien */ }
+}
+
+async function unpublishArticle(btn) {
+  readEditorForm();
+  const c = draft.content;
+  const a = art(c);
+  const slug = a.slug || c.slug;
+  if (!confirm(`Dépublier « ${c.title} » ?\n\nIl sera retiré du site, de la page Actualités et du plan du site. Tout son contenu reste dans le Camp de base : tu pourras le republier quand tu veux.`)) return;
+  const cfg = await loadPublishConfig();
+  if (!cfg.configured) return toast("La publication n'est pas encore configurée sur Vercel.", "warn");
+  const code = getPublishCode();
+  if (!code) return;
+  btn.disabled = true;
+  btn.textContent = "Retrait…";
+  try {
+    const r = await fetch("/api/camp/publish", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "unpublish", code, slug, title: c.title }),
+    });
+    const j = await r.json().catch(() => ({ ok: false, error: `Erreur ${r.status}` }));
+    if (j.badCode) { rememberPublishCode(code, false); throw new Error("Code de publication incorrect."); }
+    if (!j.ok) throw new Error(j.error || "Retrait impossible.");
+    rememberPublishCode(code, true);
+    a.slug = slug;
+    a.publishedAt = null;
+    c.status = "pret";
+    draft.pubs = draft.pubs.filter((p) => p.network !== "site");
+    renderEditor(); // les lignes de publication affichées doivent correspondre à draft.pubs avant l'enregistrement
+    toast("Article retiré du site (effectif dans environ 1 minute).");
+    commitEditor();
+  } catch (err) {
+    toast(err.message, "warn");
+    btn.disabled = false;
+    btn.textContent = "Dépublier";
+  }
+}
+
 function articlePanelHTML(c) {
   const a = art(c);
   const ph = a.photo || {};
@@ -1041,8 +1093,9 @@ Un paragraphe, avec du **gras**, de l'*italique* et un [lien](https://exemple.co
 
         <div class="article-actions">
           <button type="button" class="btn btn-ghost" data-preview>👁 Aperçu</button>
+          ${onSite(c) ? `<button type="button" class="btn btn-ghost danger" data-siteunpublish>Dépublier</button>` : ""}
           ${legacy
-            ? `<p class="muted small">Cet article a été publié avant le Camp de base : pour ne pas l'écraser, sa mise à jour se fait comme avant.</p>`
+            ? `<p class="muted small">Publié avant le Camp de base : il n'est pas modifiable directement. Pour le corriger, dépublie-le puis republie-le (il redeviendra la « Dernière actualité »).</p>`
             : `<button type="button" class="btn btn-primary" data-sitepublish>${a.publishedAt ? "Mettre à jour sur le site" : "🚀 Publier sur le site"}</button>`}
           ${cfg && !cfg.configured ? `<p class="sync-missing">Publication pas encore configurée sur Vercel${cfg.missing?.length ? ` : ${cfg.missing.join(", ")}` : ""} (voir CONNEXIONS.md).</p>` : ""}
         </div>
@@ -1129,9 +1182,7 @@ async function publishArticle(btn) {
   const cfg = await loadPublishConfig();
   if (!cfg.configured) return toast("La publication n'est pas encore configurée sur Vercel.", "warn");
 
-  let code = "";
-  try { code = localStorage.getItem(STORE_KEY + ":publish") || ""; } catch (e) { /* rien */ }
-  if (!code) code = (prompt("Code de publication (celui que tu as choisi sur Vercel) :") || "").trim();
+  const code = getPublishCode();
   if (!code) return;
 
   const a = art(c);
@@ -1160,12 +1211,9 @@ async function publishArticle(btn) {
       }),
     });
     const j = await r.json().catch(() => ({ ok: false, error: `Erreur ${r.status}` }));
-    if (j.badCode) {
-      try { localStorage.removeItem(STORE_KEY + ":publish"); } catch (e) { /* rien */ }
-      throw new Error("Code de publication incorrect.");
-    }
+    if (j.badCode) { rememberPublishCode(code, false); throw new Error("Code de publication incorrect."); }
     if (!j.ok) throw new Error(j.error || "Publication impossible.");
-    try { localStorage.setItem(STORE_KEY + ":publish", code); } catch (e) { /* rien */ }
+    rememberPublishCode(code, true);
 
     // Le contenu passe en « Publié » avec sa publication Site
     if (!a.publishedAt) a.publishedAt = data.date;
@@ -1176,6 +1224,7 @@ async function publishArticle(btn) {
     site.status = "publie";
     site.date = site.date || data.date;
     site.url = j.url;
+    renderEditor();
     toast(j.isNew ? "Article publié ! Il sera en ligne dans environ 1 minute." : "Article mis à jour sur le site.", "xp");
     commitEditor({ fromPublish: true });
   } catch (err) {
@@ -1326,6 +1375,8 @@ editor.addEventListener("click", (e) => {
     openPreview();
   } else if (tgt.hasAttribute("data-sitepublish")) {
     publishArticle(tgt);
+  } else if (tgt.hasAttribute("data-siteunpublish")) {
+    unpublishArticle(tgt);
   } else if (tgt.hasAttribute("data-photo-remove")) {
     readEditorForm();
     const a = art(draft.content);
