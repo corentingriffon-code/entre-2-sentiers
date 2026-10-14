@@ -778,7 +778,16 @@ function renderTrophees() {
 /* ---------- Routage des vues ---------- */
 
 let view = "sentier";
-function setView(v) {
+const VIEWS = ["sentier", "planning", "contenus", "stats", "memo", "trophees"];
+const viewFromHash = () => {
+  const h = location.hash.slice(1);
+  return VIEWS.includes(h) ? h : "sentier";
+};
+
+function setView(v, { push = true } = {}) {
+  if (!VIEWS.includes(v)) v = "sentier";
+  // Chaque page a sa propre adresse (#memo, #stats…) : le bouton « retour » du navigateur fonctionne
+  if (push && v !== view) history.pushState({ view: v }, "", v === "sentier" ? location.pathname + location.search : "#" + v);
   view = v;
   document.body.dataset.screen = v;
   $$(".tabs button").forEach((b) => (b.getAttribute("data-view") === v ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
@@ -786,8 +795,16 @@ function setView(v) {
   scene?.setActive(v === "sentier");
   if (v !== "sentier") { showNear(null); scene?.backToTrail(); }
   if (v !== "sentier") $("#panel").focus({ preventScroll: true });
-  try { localStorage.setItem(STORE_KEY + ":view", v); } catch (e) { /* rien */ }
+  $("#panel-close").hidden = v === "sentier";
 }
+
+window.addEventListener("popstate", () => setView(viewFromHash(), { push: false }));
+$("#panel-close").addEventListener("click", () => setView("sentier"));
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || view === "sentier" || document.querySelector("dialog[open]")) return;
+  if (e.target.closest && e.target.closest("input, textarea, select")) return;
+  setView("sentier");
+});
 function renderPanel() {
   if (view === "planning") renderPlanning();
   else if (view === "contenus") renderContenus();
@@ -1282,10 +1299,12 @@ $("#btn-new").addEventListener("click", () => openEditor(null));
 
 /* ---------- Démarrage ---------- */
 
-let startView = "sentier";
-try { startView = localStorage.getItem(STORE_KEY + ":view") || "sentier"; } catch (e) { /* rien */ }
+// On arrive toujours sur le sentier, sauf si l'adresse demande une page (#memo, #stats…)
+const startView = viewFromHash();
+history.replaceState({ view: startView }, "", location.href);
 save();
-setView(["sentier", "planning", "contenus", "stats", "memo", "trophees"].includes(startView) ? startView : "sentier");
+view = null;
+setView(startView, { push: false });
 renderHud();
 renderSide();
 initScene();
