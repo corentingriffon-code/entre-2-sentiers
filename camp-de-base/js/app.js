@@ -73,7 +73,7 @@ let lastXP = computeXP(state);
 let lastLevel = levelFor(lastXP).index;
 if (state.seenBadges == null) state.seenBadges = badges(state).filter((b) => b.unlocked).map((b) => b.id);
 
-function afterChange({ celebrateId = null } = {}) {
+function afterChange({ celebrateId = null, keepPanel = false } = {}) {
   save();
   const xp = computeXP(state);
   const delta = xp - lastXP;
@@ -92,7 +92,12 @@ function afterChange({ celebrateId = null } = {}) {
     }
   });
   save();
-  renderAll();
+  if (keepPanel) {
+    // Saisie en place (tableau de stats) : on ne redessine pas la page pour garder le curseur
+    renderHud();
+    renderSide();
+    renderScene();
+  } else renderAll();
   if (celebrateId && scene) {
     scene.celebrate(celebrateId);
   }
@@ -603,6 +608,64 @@ function inPeriod(date) {
   return !!date && date >= addDays(today(), -Number(statsPeriod));
 }
 
+/* Tableau à remplir directement (LinkedIn, Facebook) : une ligne par publication, des cases pour les chiffres */
+function editablePubTable(pubs, fields) {
+  if (!pubs.length) return `<p class="empty">Aucune publication pour l'instant.</p>`;
+  return `<div class="table-wrap"><table class="table table-edit">
+    <thead><tr><th scope="col">Publication</th><th scope="col">Date</th>${fields.map(([, l]) => `<th scope="col" class="num">${l}</th>`).join("")}<th scope="col"></th></tr></thead>
+    <tbody>${pubs.map((p) => {
+      const c = contentById(p.contentId);
+      const isArticle = c?.kind === "article";
+      return `<tr>
+      <td class="t-title">${isArticle ? `<span class="kind-tag">Article</span> ` : ""}<button type="button" class="link t-link" data-open="${p.contentId}" data-focuspub="${p.id}">${esc(c?.title || "Sans titre")}</button>${p.status === "prevu" ? ` <span class="muted small">(prévu)</span>` : ""}</td>
+      <td>${fmtDate(p.date)}</td>
+      ${fields.map(([k, l]) => `<td class="num"><input class="input stat-cell" type="number" min="0" step="1" inputmode="numeric" data-statpub="${p.id}" data-k="${k}" value="${p.stats?.[k] ?? ""}" aria-label="${l} : ${esc(c?.title || "")}"></td>`).join("")}
+      <td>${hasStats(p) ? `<span class="ok-tick" title="Stats relevées le ${fmtDate(p.statsAt)}">✓</span>` : `<span class="xp-pill">+${XP.stats}</span>`}</td>
+    </tr>`;
+    }).join("")}</tbody>
+  </table></div>`;
+}
+
+/* Nombre d'abonnés tapé directement dans la tuile : relevé du jour */
+document.addEventListener("change", (e) => {
+  const input = e.target.closest("[data-followers]");
+  if (!input || input.value.trim() === "") return;
+  const network = input.dataset.followers;
+  const followers = Math.max(0, Number(input.value) || 0);
+  const date = today();
+  const existing = state.audience.find((a) => a.network === network && a.date === date);
+  if (existing) { existing.followers = followers; existing.source = existing.source === "auto" ? "manual" : existing.source; }
+  else state.audience.push({ id: uid("a"), network, date, followers });
+  afterChange();
+});
+
+/* Enregistre une case du tableau dès qu'on la quitte */
+document.addEventListener("change", (e) => {
+  const input = e.target.closest("[data-statpub]");
+  if (!input) return;
+  const p = state.pubs.find((x) => x.id === input.dataset.statpub);
+  if (!p) return;
+  const v = input.value.trim();
+  p.stats = { ...(p.stats || {}) };
+  if (v === "") delete p.stats[input.dataset.k];
+  else p.stats[input.dataset.k] = Math.max(0, Number(v) || 0);
+  if (Object.values(p.stats).some((x) => x > 0)) {
+    p.statsAt = today();
+    p.statsSource = "manual";
+    if (p.status === "prevu") p.status = "publie";
+  } else p.statsAt = null;
+  const tick = input.closest("tr").lastElementChild;
+  tick.innerHTML = hasStats(p) ? `<span class="ok-tick">✓</span>` : `<span class="xp-pill">+${XP.stats}</span>`;
+  afterChange({ keepPanel: true });
+});
+
+/* Quand on quitte le tableau, on remet à jour les tuiles (impressions, engagement) */
+document.addEventListener("focusout", (e) => {
+  const table = e.target.closest?.(".table-edit");
+  if (!table || (e.relatedTarget && table.contains(e.relatedTarget))) return;
+  if (view === "stats") setTimeout(() => !document.activeElement?.closest?.(".table-edit") && renderStats(), 0);
+});
+
 function pubTable(pubs, fields) {
   if (!pubs.length) return `<p class="empty">Aucune publication sur cette période.</p>`;
   return `<div class="table-wrap"><table class="table">
@@ -663,12 +726,17 @@ function renderSiteStats() {
     </div>
 
     <section class="card">
-      <div class="card-head"><h2 class="h-card">Articles les plus lus</h2><span class="muted">vues relevées par article</span></div>
-      ${pubTable(articles, statFieldsFor("site"))}
+      <div class="card-head"><h2 class="h-card">Articles les plus lus</h2><span class="muted">remplis les cases directement · tous les articles</span></div>
+      ${editablePubTable(state.pubs.filter((p) => p.network === "site" && p.status === "publie").sort((x, y) => (y.date || "").localeCompare(x.date || "")), statFieldsFor("site"))}
     </section>`;
 }
 
 function renderNetworkStats(n) {
+  // Saisie à la main dans le tableau : LinkedIn, Facebook, et Instagram tant qu'il n'est pas connecté
+  const manual = n === "linkedin" || n === "facebook" || state.settings.sync?.instagram?.status !== "ok";
+  const allPubs = state.pubs
+    .filter((p) => p.network === n && (p.status === "publie" || p.date))
+    .sort((x, y) => (y.date || "9").localeCompare(x.date || "9"));
   const net = NETWORKS[n];
   const a = audienceOf(n);
   const last = a[a.length - 1];
@@ -684,7 +752,11 @@ function renderNetworkStats(n) {
   $("#panel").innerHTML = `
     ${statsHeader(`${net.label}`)}
     <div class="tiles">
-      <div class="tile"><span class="tile-label">Abonnés</span><span class="tile-value">${last ? fmt(last.followers) : "–"}</span><span class="tile-sub">${last ? `au ${fmtDate(last.date)} ${delta(last.followers, prev?.followers)}` : "pas encore de relevé"}</span></div>
+      <div class="tile">
+        <label class="tile-label" for="followers-now">Abonnés</label>
+        <input class="tile-input" id="followers-now" type="number" min="0" step="1" inputmode="numeric" data-followers="${n}" value="${last ? last.followers : ""}" placeholder="–" title="Tape ton nombre d'abonnés actuel">
+        <span class="tile-sub">${last ? `au ${fmtDate(last.date)} ${delta(last.followers, prev?.followers)}` : "tape ton nombre d'abonnés"}</span>
+      </div>
       <div class="tile"><span class="tile-label">Publications</span><span class="tile-value">${fmt(pubs.length)}</span><span class="tile-sub">${planned} programmée${planned > 1 ? "s" : ""} à venir</span></div>
       <div class="tile"><span class="tile-label">Impressions</span><span class="tile-value">${fmt(imp)}</span><span class="tile-sub">${withStats.length}/${pubs.length} publications relevées</span></div>
       <div class="tile"><span class="tile-label">Taux d'engagement</span><span class="tile-value">${pct(eng, imp)}</span><span class="tile-sub">${fmt(eng)} interactions</span></div>
@@ -708,8 +780,8 @@ function renderNetworkStats(n) {
     </div>
 
     <section class="card">
-      <div class="card-head"><h2 class="h-card">Publications ${net.label}</h2><span class="muted">clique pour saisir ou corriger les stats</span></div>
-      ${pubTable(pubs, statFieldsFor(n))}
+      <div class="card-head"><h2 class="h-card">Publications ${net.label}</h2><span class="muted">${manual ? "remplis les cases directement · toutes les publications, sans filtre de période" : "clique pour saisir ou corriger les stats"}</span></div>
+      ${manual ? editablePubTable(allPubs, statFieldsFor(n).filter(([k]) => n !== "linkedin" || k !== "saves")) : pubTable(pubs, statFieldsFor(n))}
     </section>`;
 }
 
@@ -1224,6 +1296,8 @@ async function publishArticle(btn) {
     site.status = "publie";
     site.date = site.date || data.date;
     site.url = j.url;
+    // Le post LinkedIn qui accompagne l'article
+    if (!draft.pubs.some((p) => p.network === "linkedin")) draft.pubs.push(newPub("linkedin", data.date));
     renderEditor();
     toast(j.isNew ? "Article publié ! Il sera en ligne dans environ 1 minute." : "Article mis à jour sur le site.", "xp");
     commitEditor({ fromPublish: true });
@@ -1702,6 +1776,30 @@ async function runArticleImport({ manual = false } = {}) {
   if (n) renderAll();
 }
 if (!state.settings.articlesImported) setTimeout(() => runArticleImport(), 2500);
+
+/* Chaque article publié sur le site a son post LinkedIn associé (une fois pour les articles déjà en ligne) */
+function linkArticlesToLinkedIn({ retro = false } = {}) {
+  let n = 0;
+  state.contents.forEach((c) => {
+    if (c.kind !== "article") return;
+    const ps = pubsOf(c.id);
+    const site = ps.find((p) => p.network === "site" && p.status === "publie");
+    if (!site || ps.some((p) => p.network === "linkedin")) return;
+    state.pubs.push({
+      id: uid("p"), contentId: c.id, network: "linkedin", date: site.date, time: "",
+      status: retro ? "publie" : "prevu", url: "", stats: {}, statsAt: null, plannedAt: retro ? null : today(),
+      // Les articles déjà en ligne : on suppose le post LinkedIn fait, sans gain de D+ rétroactif
+      imported: retro || undefined,
+    });
+    n++;
+  });
+  return n;
+}
+if (!state.settings.linkedinLinked) {
+  linkArticlesToLinkedIn({ retro: true });
+  state.settings.linkedinLinked = true;
+  save();
+}
 
 // Synchro automatique au plus toutes les 6 heures
 const lastSync = state.settings.sync?.at;
