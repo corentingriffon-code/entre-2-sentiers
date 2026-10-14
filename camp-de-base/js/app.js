@@ -4,7 +4,7 @@
    Données : localStorage (clé STORE_KEY), export / import JSON.
    ========================================================= */
 
-import { NETWORKS, NETWORK_ORDER, SOCIALS, PILLARS, KINDS, STATUSES, STAT_FIELDS, CHAR_LIMITS, seedState } from "./data.js";
+import { NETWORKS, NETWORK_ORDER, SOCIALS, PILLARS, KINDS, STATUSES, STAT_FIELDS, CHAR_LIMITS, NOTE_COLORS, seedState, statFieldsFor, normalizeState } from "./data.js";
 import {
   XP, LEVELS, levelFor, computeXP, questsForWeek, streak, badges, nextMission, hasStats,
   today, addDays, weekStart, parseDate, ymd,
@@ -31,7 +31,7 @@ function load() {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const s = JSON.parse(raw);
-      if (s && Array.isArray(s.contents) && Array.isArray(s.pubs)) return s;
+      if (s && Array.isArray(s.contents) && Array.isArray(s.pubs)) return normalizeState(s);
     }
   } catch (e) { /* stockage indisponible : on repart des données de départ */ }
   return seedState();
@@ -193,6 +193,7 @@ function renderSide() {
     .filter((p) => p.status === "prevu" && (!p.date || p.date >= addDays(t, -30)))
     .sort((a, b) => ((a.date || "9") + (a.time || "")).localeCompare((b.date || "9") + (b.time || "")))
     .slice(0, 6);
+  const tasksSoon = state.tasks.filter((k) => !k.done).sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")).slice(0, 4);
   const toWrite = state.contents.filter((c) => c.status === "idee" || c.status === "redaction").length;
   const ready = state.contents.filter((c) => c.status === "pret").length;
 
@@ -202,7 +203,7 @@ function renderSide() {
       <p class="mission-text">${esc(m.text)}</p>
       <div class="mission-foot">
         <span class="xp-pill">+${m.xp} m</span>
-        <button class="btn btn-primary btn-sm" type="button" data-mission="${m.contentId || ""}">${m.contentId ? "J'y vais" : "Nouvelle idée"}</button>
+        ${m.goto ? `<button class="btn btn-primary btn-sm" type="button" data-goto="${m.goto}">J'y vais</button>` : `<button class="btn btn-primary btn-sm" type="button" data-mission="${m.contentId || ""}">${m.contentId ? "J'y vais" : "Nouvelle idée"}</button>`}
       </div>
     </section>
     <section class="card">
@@ -221,6 +222,14 @@ function renderSide() {
         </button></li>`;
       }).join("")}</ul>` : `<p class="empty">Rien de programmé. Glisse un contenu prêt dans le planning.</p>`}
       <p class="side-foot"><strong>${toWrite}</strong> à écrire · <strong>${ready}</strong> prêts</p>
+    </section>
+    <section class="card">
+      <div class="card-head"><p class="eyebrow">Mémo</p><button class="link" type="button" data-goto="memo">Tâches et notes →</button></div>
+      ${tasksSoon.length ? `<ul class="tasks tasks-side">${tasksSoon.map(taskItem).join("")}</ul>` : `<p class="empty">Aucune tâche en cours.</p>`}
+      <form class="task-form task-form-side" data-form="task">
+        <input class="input" name="text" placeholder="Tâche rapide…" aria-label="Nouvelle tâche" required>
+        <button class="btn btn-primary btn-sm" type="submit">+</button>
+      </form>
     </section>`;
 }
 
@@ -267,6 +276,7 @@ function renderPlanning() {
                 <span class="pub-net">${NETWORKS[p.network].short}</span><span class="pub-title">${esc(c?.title || "Sans titre")}</span>
               </button>`;
             }).join("")}
+            ${state.tasks.filter((k) => k.due === d).map((k) => `<button type="button" class="task-chip ${k.done ? "is-done" : ""}" data-goto="memo" title="Tâche : ${esc(k.text)}"><span aria-hidden="true">${k.done ? "☑" : "☐"}</span><span class="pub-title">${esc(k.text)}</span></button>`).join("")}
           </div>`;
         }).join("")}
       </div>
@@ -344,7 +354,23 @@ function renderContenus() {
 let statsNet = "all";
 let statsPeriod = "90";
 
+function statsHeader(title) {
+  return `<div class="panel-head">
+      <div><p class="eyebrow">Stats</p><h1>${title}</h1></div>
+      <div class="panel-tools filters">
+        <div class="seg" role="group" aria-label="Réseau">
+          ${["all", ...NETWORK_ORDER].map((n) => `<button type="button" data-statnet="${n}" aria-pressed="${statsNet === n}">${n === "all" ? "Vue d'ensemble" : NETWORKS[n].label}</button>`).join("")}
+        </div>
+        <div class="seg" role="group" aria-label="Période">
+          ${[["30", "30 j"], ["90", "90 j"], ["all", "Tout"]].map(([v, l]) => `<button type="button" data-statperiod="${v}" aria-pressed="${statsPeriod === v}">${l}</button>`).join("")}
+        </div>
+      </div>
+    </div>`;
+}
+
 function renderStats() {
+  if (statsNet === "site") return renderSiteStats();
+  if (SOCIALS.includes(statsNet)) return renderNetworkStats(statsNet);
   const t = today();
   const from = statsPeriod === "all" ? "" : addDays(t, -Number(statsPeriod));
   const pubs = state.pubs.filter((p) => p.status === "publie" && (!from || (p.date && p.date >= from)) && (statsNet === "all" || p.network === statsNet));
@@ -366,17 +392,11 @@ function renderStats() {
   const maxEng = Math.max(1, ...top.map(eng));
 
   $("#panel").innerHTML = `
-    <div class="panel-head">
-      <div><p class="eyebrow">Stats</p><h1>Le chrono de tes publications</h1></div>
-      <div class="panel-tools filters">
-        <div class="seg" role="group" aria-label="Réseau">
-          ${["all", ...NETWORK_ORDER].map((n) => `<button type="button" data-statnet="${n}" aria-pressed="${statsNet === n}">${n === "all" ? "Tous" : NETWORKS[n].label}</button>`).join("")}
-        </div>
-        <div class="seg" role="group" aria-label="Période">
-          ${[["30", "30 j"], ["90", "90 j"], ["all", "Tout"]].map(([v, l]) => `<button type="button" data-statperiod="${v}" aria-pressed="${statsPeriod === v}">${l}</button>`).join("")}
-        </div>
-      </div>
-    </div>
+    ${statsHeader("Le chrono de tes publications")}
+
+    <section class="audience-row">
+      ${audienceCard("site")}${SOCIALS.map(audienceCard).join("")}
+    </section>
 
     <div class="tiles">
       <div class="tile"><span class="tile-label">Publications</span><span class="tile-value">${fmt(pubs.length)}</span><span class="tile-sub">${withStats.length} avec stats</span></div>
@@ -422,6 +442,246 @@ function renderStats() {
     </section>`;
 }
 
+/* ---------- Stats : audience (site et réseaux) ---------- */
+
+const sortedBy = (arr, k) => [...arr].sort((a, b) => a[k].localeCompare(b[k]));
+const siteReports = () => sortedBy(state.siteStats, "week");
+const audienceOf = (n) => sortedBy(state.audience.filter((a) => a.network === n), "date");
+const engOf = (p) => ["likes", "comments", "shares", "saves"].reduce((s, k) => s + (Number(p.stats?.[k]) || 0), 0);
+const sumOf = (arr, k) => arr.reduce((s, p) => s + (Number(p.stats?.[k]) || 0), 0);
+const pct = (a, b) => (b ? ((a / b) * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 }) + " %" : "–");
+
+function delta(cur, prev) {
+  if (prev == null) return "";
+  const d = cur - prev;
+  if (!d) return `<span class="delta">=</span>`;
+  return `<span class="delta ${d > 0 ? "is-up" : "is-down"}">${d > 0 ? "▲ +" : "▼ "}${fmt(d)}</span>`;
+}
+
+/* Carte récapitulative en tête de la vue d'ensemble */
+function audienceCard(n) {
+  const net = NETWORKS[n];
+  if (n === "site") {
+    const r = siteReports();
+    const last = r[r.length - 1];
+    const prev = r[r.length - 2];
+    return `<button type="button" class="aud-card" data-statnet="site" style="--net:${net.color}">
+      <span class="aud-name"><i class="net-dot"></i>Site · visiteurs</span>
+      <span class="aud-value">${last ? fmt(last.visitors) : "–"}</span>
+      <span class="aud-sub">${last ? `semaine du ${fmtDate(last.week)} ${delta(last.visitors, prev?.visitors)}` : "Aucun relevé : clique pour en ajouter"}</span>
+    </button>`;
+  }
+  const a = audienceOf(n);
+  const last = a[a.length - 1];
+  const prev = a[a.length - 2];
+  return `<button type="button" class="aud-card" data-statnet="${n}" style="--net:${net.color}">
+    <span class="aud-name"><i class="net-dot"></i>${net.label} · abonnés</span>
+    <span class="aud-value">${last ? fmt(last.followers) : "–"}</span>
+    <span class="aud-sub">${last ? `au ${fmtDate(last.date)} ${delta(last.followers, prev?.followers)}` : "Aucun relevé : clique pour en ajouter"}</span>
+  </button>`;
+}
+
+/* Histogramme vertical, une seule série (couleur = identité du réseau) */
+function vbars(points, color, unit) {
+  if (!points.length) return "";
+  const max = Math.max(1, ...points.map((p) => p.value));
+  const maxIdx = points.findIndex((p) => p.value === max);
+  return `<div class="vbars" role="img" aria-label="${esc(unit)} : ${points.map((p) => `${p.label} ${fmt(p.value)}`).join(", ")}">
+    ${[0.5, 1].map((g) => `<span class="vb-grid" style="bottom:calc(26px + ${g} * (100% - 60px))"><span>${fmt(max * g)}</span></span>`).join("")}
+    ${points.map((p, i) => `<div class="vb-col" title="${esc(p.title || p.label)} : ${fmt(p.value)} ${esc(unit)}">
+      <span class="vb-val">${i === points.length - 1 || i === maxIdx ? fmt(p.value) : ""}</span>
+      <span class="vb-bar" style="height:${(p.value / max) * 100}%;--net:${color}"></span>
+      <span class="vb-label">${esc(p.label)}</span>
+    </div>`).join("")}
+  </div>`;
+}
+
+function inPeriod(date) {
+  if (statsPeriod === "all") return true;
+  return !!date && date >= addDays(today(), -Number(statsPeriod));
+}
+
+function pubTable(pubs, fields) {
+  if (!pubs.length) return `<p class="empty">Aucune publication sur cette période.</p>`;
+  return `<div class="table-wrap"><table class="table">
+    <thead><tr><th scope="col">Publication</th><th scope="col">Date</th>${fields.map(([, l]) => `<th scope="col" class="num">${l}</th>`).join("")}<th scope="col"></th></tr></thead>
+    <tbody>${pubs.map((p) => `<tr data-open="${p.contentId}" data-focuspub="${p.id}" tabindex="0">
+      <td class="t-title">${esc(contentById(p.contentId)?.title || "Sans titre")}</td>
+      <td>${fmtDate(p.date)}</td>
+      ${fields.map(([k]) => `<td class="num">${p.stats?.[k] ? fmt(p.stats[k]) : "–"}</td>`).join("")}
+      <td>${hasStats(p) ? "" : `<span class="xp-pill">+${XP.stats}</span>`}</td>
+    </tr>`).join("")}</tbody>
+  </table></div>`;
+}
+
+function renderSiteStats() {
+  const r = siteReports();
+  const last = r[r.length - 1];
+  const prev = r[r.length - 2];
+  const recent = r.slice(-4);
+  const avg = recent.length ? recent.reduce((s, x) => s + x.visitors, 0) / recent.length : 0;
+  const articles = state.pubs
+    .filter((p) => p.network === "site" && p.status === "publie" && inPeriod(p.date))
+    .sort((a, b) => (Number(b.stats?.impressions) || 0) - (Number(a.stats?.impressions) || 0) || (b.date || "").localeCompare(a.date || ""));
+  const views = sumOf(articles, "impressions");
+  const lastWeek = addDays(weekStart(today()), -7);
+  const color = NETWORKS.site.color;
+
+  $("#panel").innerHTML = `
+    ${statsHeader("Qui passe sur le site")}
+    <div class="tiles">
+      <div class="tile"><span class="tile-label">Visiteurs</span><span class="tile-value">${last ? fmt(last.visitors) : "–"}</span><span class="tile-sub">${last ? `semaine du ${fmtDate(last.week)} ${delta(last.visitors, prev?.visitors)}` : "pas encore de relevé"}</span></div>
+      <div class="tile"><span class="tile-label">Pages vues</span><span class="tile-value">${last ? fmt(last.pageviews) : "–"}</span><span class="tile-sub">${last ? `${delta(last.pageviews, prev?.pageviews)} sur la même semaine` : "–"}</span></div>
+      <div class="tile"><span class="tile-label">Moyenne 4 semaines</span><span class="tile-value">${recent.length ? fmt(avg) : "–"}</span><span class="tile-sub">visiteurs par semaine</span></div>
+      <div class="tile"><span class="tile-label">Vues d'articles</span><span class="tile-value">${fmt(views)}</span><span class="tile-sub">${articles.filter(hasStats).length}/${articles.length} articles relevés</span></div>
+    </div>
+
+    <div class="stats-grid">
+      <section class="card">
+        <div class="card-head"><h2 class="h-card">Visiteurs par semaine</h2><span class="muted">${r.length} relevé${r.length > 1 ? "s" : ""}</span></div>
+        ${r.length ? vbars(r.slice(-12).map((x) => ({ label: fmtDate(x.week), value: x.visitors, title: `Semaine du ${fmtDate(x.week)}` })), color, "visiteurs") : `<p class="empty">Ajoute ton premier relevé pour voir la courbe se dessiner.</p>`}
+      </section>
+      <section class="card">
+        <div class="card-head"><h2 class="h-card">Relevé de fréquentation</h2><span class="xp-pill">+${XP.siteReport} m</span></div>
+        <form class="report-form" data-form="site">
+          <label>Semaine du<input class="input" type="date" name="week" value="${lastWeek}" required></label>
+          <label>Visiteurs<input class="input" type="number" name="visitors" min="0" step="1" inputmode="numeric" required></label>
+          <label>Pages vues<input class="input" type="number" name="pageviews" min="0" step="1" inputmode="numeric"></label>
+          <button class="btn btn-primary btn-sm" type="submit">Enregistrer</button>
+        </form>
+        <p class="muted small">Les chiffres se lisent dans Google Analytics (le site y est relié via Google Tag Manager) : <em>Rapports → Engagement → Pages et écrans</em>, sur la semaine choisie. Les vues de chaque article se reportent dans sa fiche (ligne « Site »).</p>
+        <p><a class="link" href="https://analytics.google.com/" target="_blank" rel="noopener">Ouvrir Google Analytics ↗</a></p>
+        ${r.length ? `<details class="history"><summary>Historique des relevés</summary><ul>${[...r].reverse().map((x) => `<li><span>Semaine du ${fmtDate(x.week)}</span><span>${fmt(x.visitors)} visiteurs · ${fmt(x.pageviews || 0)} pages vues</span><button type="button" class="link danger small" data-site-del="${x.id}">Supprimer</button></li>`).join("")}</ul></details>` : ""}
+      </section>
+    </div>
+
+    <section class="card">
+      <div class="card-head"><h2 class="h-card">Articles les plus lus</h2><span class="muted">vues relevées par article</span></div>
+      ${pubTable(articles, statFieldsFor("site"))}
+    </section>`;
+}
+
+function renderNetworkStats(n) {
+  const net = NETWORKS[n];
+  const a = audienceOf(n);
+  const last = a[a.length - 1];
+  const prev = a[a.length - 2];
+  const first = a.find((x) => inPeriod(x.date));
+  const pubs = state.pubs.filter((p) => p.network === n && p.status === "publie" && inPeriod(p.date)).sort((x, y) => (y.date || "").localeCompare(x.date || ""));
+  const withStats = pubs.filter(hasStats);
+  const imp = sumOf(withStats, "impressions");
+  const eng = withStats.reduce((s, p) => s + engOf(p), 0);
+  const best = [...withStats].sort((x, y) => engOf(y) - engOf(x))[0];
+  const planned = state.pubs.filter((p) => p.network === n && p.status === "prevu").length;
+
+  $("#panel").innerHTML = `
+    ${statsHeader(`${net.label}`)}
+    <div class="tiles">
+      <div class="tile"><span class="tile-label">Abonnés</span><span class="tile-value">${last ? fmt(last.followers) : "–"}</span><span class="tile-sub">${last ? `au ${fmtDate(last.date)} ${delta(last.followers, prev?.followers)}` : "pas encore de relevé"}</span></div>
+      <div class="tile"><span class="tile-label">Publications</span><span class="tile-value">${fmt(pubs.length)}</span><span class="tile-sub">${planned} programmée${planned > 1 ? "s" : ""} à venir</span></div>
+      <div class="tile"><span class="tile-label">Impressions</span><span class="tile-value">${fmt(imp)}</span><span class="tile-sub">${withStats.length}/${pubs.length} publications relevées</span></div>
+      <div class="tile"><span class="tile-label">Taux d'engagement</span><span class="tile-value">${pct(eng, imp)}</span><span class="tile-sub">${fmt(eng)} interactions</span></div>
+    </div>
+
+    <div class="stats-grid">
+      <section class="card">
+        <div class="card-head"><h2 class="h-card">Évolution des abonnés</h2>${last && first && first !== last ? `<span class="muted">${delta(last.followers, first.followers)} sur la période</span>` : ""}</div>
+        ${a.length ? vbars(a.slice(-12).map((x) => ({ label: fmtDate(x.date), value: x.followers })), net.color, "abonnés") : `<p class="empty">Note ton nombre d'abonnés de temps en temps (une fois par semaine suffit) pour suivre la progression.</p>`}
+      </section>
+      <section class="card">
+        <div class="card-head"><h2 class="h-card">Relevé d'abonnés</h2><span class="xp-pill">+${XP.audienceReport} m</span></div>
+        <form class="report-form" data-form="audience" data-network="${n}">
+          <label>Date<input class="input" type="date" name="date" value="${today()}" required></label>
+          <label>Abonnés<input class="input" type="number" name="followers" min="0" step="1" inputmode="numeric" value="${last ? last.followers : ""}" required></label>
+          <button class="btn btn-primary btn-sm" type="submit">Enregistrer</button>
+        </form>
+        ${best ? `<div class="best"><p class="eyebrow">Meilleure publication</p><button type="button" class="link" data-open="${best.contentId}" data-focuspub="${best.id}">${esc(contentById(best.contentId)?.title || "Sans titre")}</button><p class="muted small">${fmt(engOf(best))} interactions · ${fmt(Number(best.stats.impressions) || 0)} impressions · ${fmtDate(best.date)}</p></div>` : ""}
+        ${a.length ? `<details class="history"><summary>Historique des relevés</summary><ul>${[...a].reverse().map((x) => `<li><span>${fmtDate(x.date)}</span><span>${fmt(x.followers)} abonnés</span><button type="button" class="link danger small" data-aud-del="${x.id}">Supprimer</button></li>`).join("")}</ul></details>` : ""}
+      </section>
+    </div>
+
+    <section class="card">
+      <div class="card-head"><h2 class="h-card">Publications ${net.label}</h2><span class="muted">clique pour saisir ou corriger les stats</span></div>
+      ${pubTable(pubs, statFieldsFor(n))}
+    </section>`;
+}
+
+/* ---------- Vue Mémo : tâches et notes ---------- */
+
+function taskItem(k) {
+  const t = today();
+  const late = !k.done && k.due && k.due < t;
+  const c = k.contentId ? contentById(k.contentId) : null;
+  return `<li class="task ${k.done ? "is-done" : ""}">
+    <button type="button" class="task-check" data-task-toggle="${k.id}" aria-pressed="${!!k.done}" aria-label="${k.done ? "Rouvrir" : "Terminer"} : ${esc(k.text)}">${k.done ? "✓" : ""}</button>
+    <span class="task-body">
+      <span class="task-text">${esc(k.text)}</span>
+      <span class="task-meta">
+        ${k.due ? `<span class="${late ? "is-late" : ""}">${late ? "En retard · " : k.due === t ? "Aujourd'hui · " : ""}${fmtDate(k.due)}</span>` : ""}
+        ${c ? `<button type="button" class="link small" data-open="${c.id}">${esc(c.title)}</button>` : ""}
+      </span>
+    </span>
+    ${k.done ? "" : `<span class="xp-pill">+${XP.task}</span>`}
+    <button type="button" class="btn btn-ghost btn-icon btn-mini" data-task-del="${k.id}" aria-label="Supprimer la tâche">×</button>
+  </li>`;
+}
+
+function renderMemo() {
+  const t = today();
+  const open = state.tasks.filter((k) => !k.done).sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999") || a.createdAt.localeCompare(b.createdAt));
+  const done = state.tasks.filter((k) => k.done).sort((a, b) => (b.doneAt || "").localeCompare(a.doneAt || ""));
+  const groups = [
+    ["En retard", open.filter((k) => k.due && k.due < t)],
+    ["Aujourd'hui", open.filter((k) => k.due === t)],
+    ["À venir", open.filter((k) => k.due && k.due > t)],
+    ["Sans date", open.filter((k) => !k.due)],
+  ].filter(([, l]) => l.length);
+  const notes = [...state.notes].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.updatedAt.localeCompare(a.updatedAt));
+  const linkable = state.contents.filter((c) => c.status !== "publie");
+
+  $("#panel").innerHTML = `
+    <div class="panel-head">
+      <div><p class="eyebrow">Mémo</p><h1>Le carnet du camp</h1></div>
+      <div class="panel-tools"><span class="muted">${open.length} tâche${open.length > 1 ? "s" : ""} en cours · ${done.length} terminée${done.length > 1 ? "s" : ""}</span></div>
+    </div>
+    <div class="memo">
+      <section class="card">
+        <div class="card-head"><h2 class="h-card">Tâches</h2><span class="muted">+${XP.task} m par tâche terminée</span></div>
+        <form class="task-form" data-form="task">
+          <input class="input" name="text" placeholder="Ajouter une tâche… (ex. : demander les photos à l'orga)" aria-label="Nouvelle tâche" required>
+          <input class="input" type="date" name="due" aria-label="Échéance">
+          <select class="input" name="contentId" aria-label="Contenu lié">
+            <option value="">Aucun contenu lié</option>
+            ${linkable.map((c) => `<option value="${c.id}">${esc(c.title)}</option>`).join("")}
+          </select>
+          <button class="btn btn-primary btn-sm" type="submit">Ajouter</button>
+        </form>
+        ${groups.length ? groups.map(([label, list]) => `<div class="task-group"><p class="eyebrow">${label}</p><ul class="tasks">${list.map(taskItem).join("")}</ul></div>`).join("") : `<p class="empty">Aucune tâche en cours. Note ici tout ce qui te passe par la tête pour ne rien oublier.</p>`}
+        ${done.length ? `<details class="history"><summary>Terminées (${done.length})</summary><ul class="tasks">${done.slice(0, 30).map(taskItem).join("")}</ul></details>` : ""}
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2 class="h-card">Notes</h2><span class="muted">idées, liens, mémos</span></div>
+        <form class="note-form" data-form="note">
+          <textarea class="input" name="text" rows="3" placeholder="Une idée, un lien, un contact, un chiffre à vérifier…" aria-label="Nouvelle note" required></textarea>
+          <div class="note-form-foot">
+            <span class="note-colors" role="radiogroup" aria-label="Couleur">
+              ${Object.entries(NOTE_COLORS).map(([k, v], i) => `<label class="swatch" style="--sw:${v}"><input type="radio" name="color" value="${k}" ${i === 0 ? "checked" : ""}><span class="sr">${k}</span></label>`).join("")}
+            </span>
+            <button class="btn btn-primary btn-sm" type="submit">Épingler la note</button>
+          </div>
+        </form>
+        ${notes.length ? `<div class="notes">${notes.map((nt) => `<article class="note ${nt.pinned ? "is-pinned" : ""}" style="--note:${NOTE_COLORS[nt.color] || NOTE_COLORS.sable}">
+          <textarea class="note-text" data-note-id="${nt.id}" aria-label="Note" rows="4">${esc(nt.text)}</textarea>
+          <footer><span class="muted small">${fmtDate(nt.updatedAt.slice(0, 10))}</span>
+            <span><button type="button" class="btn btn-ghost btn-icon btn-mini" data-note-pin="${nt.id}" aria-pressed="${!!nt.pinned}" title="${nt.pinned ? "Désépingler" : "Garder en haut"}">📌</button>
+            <button type="button" class="btn btn-ghost btn-icon btn-mini" data-note-del="${nt.id}" aria-label="Supprimer la note">×</button></span>
+          </footer>
+        </article>`).join("")}</div>` : `<p class="empty">Pas encore de note.</p>`}
+      </section>
+    </div>`;
+}
+
 /* ---------- Vue Trophées ---------- */
 
 function renderTrophees() {
@@ -447,7 +707,7 @@ function renderTrophees() {
           <span class="lv-alt">${fmt(alt)} m</span><span class="lv-name">${name}</span>${i === lvl.index ? `<span class="lv-you">Tu es ici</span>` : ""}
         </li>`).join("")}
       </ol>
-      <p class="muted small">Barème : idée +${XP.content.idee} · en rédaction ${XP.content.redaction} · prêt ${XP.content.pret} · publication programmée +${XP.pubPlanned} · publiée +${XP.pubPublished} · stats relevées +${XP.stats} · défi hebdo réussi +${XP.quest}.</p>
+      <p class="muted small">Barème : idée +${XP.content.idee} · en rédaction ${XP.content.redaction} · prêt ${XP.content.pret} · publication programmée +${XP.pubPlanned} · publiée +${XP.pubPublished} · stats relevées +${XP.stats} · défi hebdo réussi +${XP.quest} · relevé site ou abonnés +${XP.siteReport} · tâche terminée +${XP.task}.</p>
     </section>
 
     <section class="card">
@@ -487,6 +747,7 @@ function renderPanel() {
   else if (view === "contenus") renderContenus();
   else if (view === "stats") renderStats();
   else if (view === "trophees") renderTrophees();
+  else if (view === "memo") renderMemo();
   else $("#panel").innerHTML = "";
 }
 function renderAll() {
@@ -521,7 +782,7 @@ function pubRowHTML(p, i) {
     <details class="pub-stats" ${statsOpen ? "open" : ""}>
       <summary>Statistiques ${hasStats(p) ? `<span class="muted">relevées le ${fmtDate(p.statsAt)}</span>` : `<span class="xp-pill">+${XP.stats}</span>`}</summary>
       <div class="stats-inputs">
-        ${STAT_FIELDS.map(([k, l]) => `<label>${l}<input class="input" type="number" min="0" step="1" inputmode="numeric" name="stat-${k}" value="${p.stats?.[k] ?? ""}"></label>`).join("")}
+        ${statFieldsFor(p.network).map(([k, l]) => `<label>${l}<input class="input" type="number" min="0" step="1" inputmode="numeric" name="stat-${k}" value="${p.stats?.[k] ?? ""}"></label>`).join("")}
       </div>
     </details>
     <button type="button" class="link danger small" data-delpub="${i}">Retirer cette publication</button>
@@ -599,7 +860,9 @@ function readEditorForm() {
     p.status = row.querySelector('[name="status"]').value;
     p.url = row.querySelector('[name="url"]').value.trim();
     STAT_FIELDS.forEach(([k]) => {
-      const v = row.querySelector(`[name="stat-${k}"]`).value;
+      const input = row.querySelector(`[name="stat-${k}"]`);
+      if (!input) return;
+      const v = input.value;
       if (v === "") delete p.stats[k];
       else p.stats[k] = Math.max(0, Number(v) || 0);
     });
@@ -843,6 +1106,78 @@ document.addEventListener("drop", (e) => {
   }
 });
 
+
+/* Mémo et relevés d'audience */
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-task-toggle], [data-task-del], [data-note-pin], [data-note-del], [data-site-del], [data-aud-del]");
+  if (!b) return;
+  const d = b.dataset;
+  if (d.taskToggle) {
+    const k = state.tasks.find((x) => x.id === d.taskToggle);
+    if (!k) return;
+    k.done = !k.done;
+    k.doneAt = k.done ? today() : null;
+    afterChange();
+  } else if (d.taskDel) {
+    state.tasks = state.tasks.filter((x) => x.id !== d.taskDel);
+    afterChange();
+  } else if (d.notePin) {
+    const n = state.notes.find((x) => x.id === d.notePin);
+    if (n) { n.pinned = !n.pinned; save(); renderPanel(); }
+  } else if (d.noteDel) {
+    if (confirm("Supprimer cette note ?")) { state.notes = state.notes.filter((x) => x.id !== d.noteDel); save(); renderPanel(); }
+  } else if (d.siteDel) {
+    state.siteStats = state.siteStats.filter((x) => x.id !== d.siteDel);
+    afterChange();
+  } else if (d.audDel) {
+    state.audience = state.audience.filter((x) => x.id !== d.audDel);
+    afterChange();
+  }
+});
+
+document.addEventListener("submit", (e) => {
+  const f = e.target.closest("[data-form]");
+  if (!f) return;
+  e.preventDefault();
+  const get = (n) => f.elements.namedItem(n)?.value?.trim() ?? "";
+  const kind = f.dataset.form;
+  if (kind === "task") {
+    if (!get("text")) return;
+    state.tasks.push({ id: uid("t"), text: get("text"), due: get("due"), contentId: get("contentId"), done: false, doneAt: null, createdAt: today() });
+    toast("Tâche ajoutée");
+  } else if (kind === "note") {
+    if (!get("text")) return;
+    const now = new Date().toISOString();
+    state.notes.push({ id: uid("n"), text: f.elements.namedItem("text").value, color: f.querySelector("[name=color]:checked")?.value || "sable", pinned: false, createdAt: now, updatedAt: now });
+  } else if (kind === "site") {
+    const week = weekStart(get("week"));
+    const entry = { visitors: Math.max(0, Number(get("visitors")) || 0), pageviews: Math.max(0, Number(get("pageviews")) || 0) };
+    const existing = state.siteStats.find((x) => x.week === week);
+    if (existing) { Object.assign(existing, entry); toast("Relevé de la semaine mis à jour"); }
+    else state.siteStats.push({ id: uid("s"), week, ...entry });
+  } else if (kind === "audience") {
+    const network = f.dataset.network;
+    const date = get("date");
+    const followers = Math.max(0, Number(get("followers")) || 0);
+    const existing = state.audience.find((x) => x.network === network && x.date === date);
+    if (existing) { existing.followers = followers; toast("Relevé du jour mis à jour"); }
+    else state.audience.push({ id: uid("a"), network, date, followers });
+  } else return;
+  afterChange();
+  if (kind === "task") (f.closest("#panel") ? $(`#panel [data-form="task"] [name="text"]`) : $(`#side [data-form="task"] [name="text"]`))?.focus();
+});
+
+/* Les notes s'enregistrent quand on quitte le champ, sans redessiner la page */
+document.addEventListener("change", (e) => {
+  const id = e.target.dataset?.noteId;
+  if (!id) return;
+  const n = state.notes.find((x) => x.id === id);
+  if (!n) return;
+  n.text = e.target.value;
+  n.updatedAt = new Date().toISOString();
+  save();
+});
+
 /* Menu : sauvegarde / réglages */
 const menu = $("#menu");
 $("#btn-menu").addEventListener("click", () => {
@@ -881,8 +1216,7 @@ $("#import-file").addEventListener("change", async (e) => {
   try {
     const data = JSON.parse(await file.text());
     if (!Array.isArray(data.contents) || !Array.isArray(data.pubs)) throw new Error("format");
-    data.settings = { weeklyGoal: 2, ...(data.settings || {}) };
-    state = data;
+    state = normalizeState(data);
     if (!Array.isArray(state.seenBadges)) state.seenBadges = badges(state).filter((b) => b.unlocked).map((b) => b.id);
     lastXP = computeXP(state);
     lastLevel = levelFor(lastXP).index;
@@ -905,7 +1239,7 @@ $("#btn-new").addEventListener("click", () => openEditor(null));
 let startView = "sentier";
 try { startView = localStorage.getItem(STORE_KEY + ":view") || "sentier"; } catch (e) { /* rien */ }
 save();
-setView(["sentier", "planning", "contenus", "stats", "trophees"].includes(startView) ? startView : "sentier");
+setView(["sentier", "planning", "contenus", "stats", "memo", "trophees"].includes(startView) ? startView : "sentier");
 renderHud();
 renderSide();
 initScene();

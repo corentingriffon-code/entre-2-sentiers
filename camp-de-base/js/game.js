@@ -35,6 +35,9 @@ export const XP = {
   pubPublished: 100,
   stats: 25,
   quest: 150,
+  siteReport: 25,
+  audienceReport: 25,
+  task: 15,
 };
 
 export const LEVELS = [
@@ -123,6 +126,9 @@ export function computeXP(state) {
   let quests = 0;
   allWeeks(state).forEach((ws) => questsForWeek(state, ws).forEach((q) => q.done && quests++));
   xp += quests * XP.quest;
+  xp += (state.siteStats || []).length * XP.siteReport;
+  xp += (state.audience || []).length * XP.audienceReport;
+  xp += (state.tasks || []).filter((t) => t.done).length * XP.task;
   return xp;
 }
 
@@ -142,6 +148,12 @@ export function badges(state) {
     return SOCIALS.every((n) => nets.has(n));
   });
   const s = streak(state);
+  const tasksDone = (state.tasks || []).filter((t) => t.done).length;
+  const siteReports = (state.siteStats || []).length;
+  const followersGained = SOCIALS.reduce((sum, n) => {
+    const snaps = (state.audience || []).filter((a) => a.network === n).sort((a, b) => a.date.localeCompare(b.date));
+    return sum + (snaps.length > 1 ? Math.max(0, snaps[snaps.length - 1].followers - snaps[0].followers) : 0);
+  }, 0);
   const socialFirst = Object.fromEntries(SOCIALS.map((n) => [n, published.some((p) => p.network === n)]));
 
   const list = [
@@ -161,6 +173,9 @@ export function badges(state) {
     { id: "audience", icon: "👀", name: "Ça grimpe", desc: "10 000 impressions cumulées.", value: sum("impressions"), goal: 10000 },
     { id: "viral", icon: "🚀", name: "Effet avalanche", desc: "Une publication à 5 000 impressions.", value: maxImp, goal: 5000 },
     { id: "communaute", icon: "💬", name: "Ravito convivial", desc: "100 commentaires cumulés.", value: sum("comments"), goal: 100 },
+    { id: "frequentation", icon: "🧭", name: "Compteur de passage", desc: "4 relevés de fréquentation du site.", value: siteReports, goal: 4 },
+    { id: "abonnes", icon: "🌱", name: "Ça pousse", desc: "100 abonnés gagnés sur les réseaux (d'après tes relevés).", value: followersGained, goal: 100 },
+    { id: "taches", icon: "✅", name: "Carnet de bord", desc: "10 tâches terminées.", value: tasksDone, goal: 10 },
   ];
   return list.map((b) => ({ ...b, unlocked: b.value >= b.goal }));
 }
@@ -171,6 +186,9 @@ export function nextMission(state) {
   const t = today();
   const byId = new Map(state.contents.map((c) => [c.id, c]));
   const title = (p) => byId.get(p.contentId)?.title || "Sans titre";
+
+  const openTasks = (state.tasks || []).filter((k) => !k.done && k.due && k.due <= t).sort((a, b) => a.due.localeCompare(b.due));
+  if (openTasks.length) return { text: `${openTasks[0].due < t ? "Tâche en retard" : "Tâche du jour"} : ${openTasks[0].text}`, contentId: null, goto: "memo", xp: XP.task };
 
   const late = state.pubs.filter((p) => p.status === "prevu" && p.date && p.date < t).sort((a, b) => a.date.localeCompare(b.date));
   if (late.length) return { text: `Publication en retard : « ${title(late[0])} » sur ${NETWORKS[late[0].network].label}`, contentId: late[0].contentId, xp: XP.pubPublished - XP.pubPlanned };

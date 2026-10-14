@@ -50,6 +50,24 @@ export const STAT_FIELDS = [
   ["clicks", "Clics"],
 ];
 
+// Le site n'a ni réactions ni enregistrements : on y relève surtout les vues
+const SITE_FIELDS = [
+  ["impressions", "Vues"],
+  ["comments", "Commentaires"],
+  ["shares", "Partages"],
+  ["clicks", "Clics"],
+];
+export const statFieldsFor = (network) => (network === "site" ? SITE_FIELDS : STAT_FIELDS);
+
+export const NOTE_COLORS = { sable: "#efe3c8", sauge: "#dfe3d0", lime: "#e3eac7", blanc: "#ffffff" };
+
+/* Complète un état chargé (sauvegarde ancienne ou importée) avec les champs récents */
+export function normalizeState(s) {
+  s.settings = { weeklyGoal: 2, ...(s.settings || {}) };
+  for (const k of ["siteStats", "audience", "tasks", "notes"]) if (!Array.isArray(s[k])) s[k] = [];
+  return s;
+}
+
 const published = [
   ["2026-08-03", "chercher-un-emploi-chercher-un-dossard", "Chercher un emploi, c'est comme chercher un dossard", "personnes"],
   ["2026-08-03", "organiser-une-course-cest-faire-du-marketing-avant-de-faire-du-sport", "Organiser une course, c'est déjà faire du marketing", "evenements"],
@@ -110,5 +128,5 @@ export function seedState() {
     contents.push({ id: id("c"), title, kind: "article", pillar, status: "idee", slug: "", notes, text: "", createdAt: "2026-10-05" });
   });
 
-  return { version: 1, contents, pubs, settings: { weeklyGoal: 2 }, seenBadges: null, seenLevel: null };
+  return normalizeState({ version: 1, contents, pubs, settings: { weeklyGoal: 2 }, seenBadges: null, seenLevel: null });
 }
