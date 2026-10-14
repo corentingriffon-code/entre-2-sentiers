@@ -73,6 +73,23 @@
     </div>
   </div>
 
+  <div class="keys-hint" id="keys-hint" aria-label="Commandes de la balade">
+    <div><strong>Marcher</strong><span class="kbds"><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd></span><span>ou flèches, ou clic au sol</span></div>
+    <div><strong>Suivre le sentier</strong><span>les étiquettes montrent les repères</span></div>
+    <div><strong>S'arrêter dans un cercle</strong><span class="kbds"><kbd>Entrée</kbd></span><span>ouvre le lieu</span></div>
+  </div>
+
+  <button type="button" class="near-prompt" id="near-prompt" hidden><kbd>Entrée</kbd><span>Ouvrir</span><strong class="near-label"></strong></button>
+
+  <div class="loader" id="loader" role="status" aria-live="polite">
+    <div class="loader-card">
+      <p class="loader-script">Entre 2 sentiers</p>
+      <p class="loader-title">Camp de base</p>
+      <div class="loader-track"><span class="loader-fill"></span><span class="loader-runner" aria-hidden="true">🏃</span></div>
+      <p class="loader-text">On lace les chaussures…</p>
+    </div>
+  </div>
+
   <main class="panel" id="panel" tabindex="-1"></main>
 
   <div class="tooltip" id="tooltip" role="tooltip" hidden></div>

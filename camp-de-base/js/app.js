@@ -100,10 +100,42 @@ function afterChange({ celebrateId = null } = {}) {
 let scene = null;
 const tooltip = $("#tooltip");
 
+const nextFrame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+function loaderStep(pct, text) {
+  const l = $("#loader");
+  if (!l) return;
+  l.querySelector(".loader-fill").style.width = pct + "%";
+  l.querySelector(".loader-runner").style.left = pct + "%";
+  l.querySelector(".loader-text").textContent = text;
+}
+function hideLoader() {
+  const l = $("#loader");
+  if (!l) return;
+  l.classList.add("is-done");
+  setTimeout(() => l.remove(), 700);
+}
+
+const nearPrompt = $("#near-prompt");
+function showNear(n) {
+  if (!n) { nearPrompt.hidden = true; return; }
+  let label;
+  if (n.type === "station") label = `${n.small} · ${n.title}`;
+  else label = contentById(n.id)?.title || "Contenu";
+  nearPrompt.querySelector(".near-label").textContent = label;
+  nearPrompt.hidden = false;
+}
+nearPrompt.addEventListener("click", () => scene?.activateNear());
+
 async function initScene() {
   try {
+    loaderStep(25, "On lace les chaussures…");
+    await nextFrame();
     const mod = await import("./scene.js");
+    loaderStep(55, "On dessine la montagne…");
+    await nextFrame();
     scene = mod.createScene($("#scene"), {
+      onStation: (id) => setView(id),
+      onProximity: showNear,
       onSelect: (id) => openEditor(id),
       onHover: (h) => {
         if (!h) { tooltip.hidden = true; return; }
@@ -125,7 +157,13 @@ async function initScene() {
     $("#scene-fallback").hidden = false;
     $("#scene-controls").hidden = true;
   }
+  loaderStep(85, "On balise le sentier…");
+  await nextFrame();
   renderScene();
+  scene?.setActive(view === "sentier");
+  loaderStep(100, "C'est parti !");
+  await nextFrame();
+  setTimeout(hideLoader, 350);
 }
 
 function renderScene() {
@@ -151,6 +189,12 @@ function renderScene() {
     }));
   let avatar = -1;
   items.forEach((it, i) => { if (it.state === "publie") avatar = i; });
+  // Quelques étiquettes flottantes pour les repères utiles
+  if (avatar >= 0) items[avatar].pin = "Dernière publication";
+  const nextPlanned = items.find((it) => it.state === "programme");
+  if (nextPlanned) nextPlanned.pin = "Prochaine publication";
+  const nextReady = items.find((it) => it.state === "pret");
+  if (nextReady) nextReady.pin = "Prêt à programmer";
   scene.setItems(items, avatar);
 }
 
@@ -739,6 +783,8 @@ function setView(v) {
   document.body.dataset.screen = v;
   $$(".tabs button").forEach((b) => (b.getAttribute("data-view") === v ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
   renderPanel();
+  scene?.setActive(v === "sentier");
+  if (v !== "sentier") { showNear(null); scene?.backToTrail(); }
   if (v !== "sentier") $("#panel").focus({ preventScroll: true });
   try { localStorage.setItem(STORE_KEY + ":view", v); } catch (e) { /* rien */ }
 }

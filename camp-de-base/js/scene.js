@@ -231,8 +231,9 @@ function farFromTrail(trailPts, x, z, d2) {
   return true;
 }
 
-function buildForest(curve) {
+function buildForest(curve, avoid = []) {
   const group = new THREE.Group();
+  const clear = (x, z) => avoid.every((a) => (a.x - x) ** 2 + (a.z - z) ** 2 > a.r * a.r);
   const trailPts = curve.getSpacedPoints(300);
   const rnd = seeded(7);
   const spots = [];
@@ -243,7 +244,7 @@ function buildForest(curve) {
     if (h > 18 || h < 1.2) continue;
     // Bosquets : plus dense là où le bruit est élevé
     if (fbm(x * 0.05 + 2, z * 0.05 + 5) < 0.42) continue;
-    if (!farFromTrail(trailPts, x, z, 20)) continue;
+    if (!farFromTrail(trailPts, x, z, 20) || !clear(x, z)) continue;
     spots.push({ x, z, h, k: 0.75 + rnd() * 0.85, tint: rnd() });
   }
 
@@ -290,7 +291,7 @@ function buildForest(curve) {
     const z = (rnd() - 0.5) * 220;
     const h = heightAt(x, z);
     if (h > 8 || h < 0.8) continue;
-    if (!farFromTrail(trailPts, x, z, 12)) continue;
+    if (!farFromTrail(trailPts, x, z, 12) || !clear(x, z)) continue;
     bushSpots.push({ x, z, h, k: 0.5 + rnd() * 0.6 });
   }
   const bush = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 20, 14), mat(0xffffff), bushSpots.length);
@@ -310,7 +311,7 @@ function buildForest(curve) {
     const z = (rnd() - 0.5) * 140;
     const h = heightAt(x, z);
     if (h < 12 || h > 30) continue;
-    if (!farFromTrail(trailPts, x, z, 10)) continue;
+    if (!farFromTrail(trailPts, x, z, 10) || !clear(x, z)) continue;
     rocks.push({ x, z, h, k: 0.35 + rnd() * 0.6, ry: rnd() * 6 });
   }
   const rock = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 18, 12), mat(0x9d9482), rocks.length);
@@ -466,6 +467,113 @@ function buildMarker(item) {
   return g;
 }
 
+/* ---------- Lieux du camp (ouvrent les autres vues) ---------- */
+
+/* Le village du camp de base, au pied du sentier ; les trophées sont au sommet */
+const CAMP_ANGLE = -Math.PI * 0.35;
+const CAMP = { x: Math.cos(CAMP_ANGLE) * 90, z: Math.sin(CAMP_ANGLE) * 90 };
+const STATIONS = [
+  { id: "contenus", num: 1, small: "Atelier", title: "Contenus", side: -21 },
+  { id: "planning", num: 2, small: "Refuge", title: "Planning", side: -7 },
+  { id: "memo", num: 3, small: "Cabane", title: "Mémo", side: 7 },
+  { id: "stats", num: 4, small: "Observatoire", title: "Stats", side: 21 },
+  { id: "trophees", num: 5, small: "Sommet", title: "Trophées", summit: true },
+];
+
+function stationSpots(curve) {
+  const ox = Math.cos(CAMP_ANGLE);
+  const oz = Math.sin(CAMP_ANGLE);
+  const tx = -oz;
+  const tz = ox;
+  return STATIONS.map((d) => {
+    if (d.summit) {
+      const p = curve.getPointAt(1);
+      return { ...d, x: p.x, z: p.z, y: heightAt(p.x, p.z), ox, oz };
+    }
+    const bend = Math.abs(d.side) > 10 ? 3 : -2;
+    const x = CAMP.x + tx * d.side + ox * bend;
+    const z = CAMP.z + tz * d.side + oz * bend;
+    return { ...d, x, z, y: heightAt(x, z), ox, oz };
+  });
+}
+
+/* Anneau qui épouse le relief */
+function groundRing(cx, cz, r0, r1, color, opacity) {
+  const geo = new THREE.RingGeometry(r0, r1, 72, 1);
+  geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position;
+  const cy = heightAt(cx, cz);
+  for (let i = 0; i < pos.count; i++) pos.setY(i, heightAt(cx + pos.getX(i), cz + pos.getZ(i)) - cy + 0.3);
+  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide }));
+  m.position.set(cx, cy, cz);
+  return m;
+}
+
+function roofMesh(w, h, depth, material) {
+  const shape = new THREE.Shape();
+  shape.moveTo(-w / 2, 0);
+  shape.lineTo(w / 2, 0);
+  shape.lineTo(0, h);
+  shape.lineTo(-w / 2, 0);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 2 });
+  geo.translate(0, 0, -depth / 2);
+  return new THREE.Mesh(geo, material);
+}
+
+function buildHouse(id) {
+  const g = new THREE.Group();
+  const wood = mat(0x9a7652);
+  const roofM = mat(0x3f4c38);
+  const white = mat(0xf4efe4);
+  const glow = mat(0xf3d68a, { emissive: 0xf3c25a, emissiveIntensity: 0.6 });
+  const dark = mat(COLORS.dark);
+  if (id === "planning") {
+    const body = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.1, 2.6), wood);
+    body.position.y = 1.05;
+    const roof = roofMesh(4, 1.7, 3.1, roofM);
+    roof.position.y = 2.1;
+    const door = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.2, 0.05), dark);
+    door.position.set(0, 0.6, 1.31);
+    const win = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.05), glow);
+    win.position.set(1, 1.3, 1.31);
+    const win2 = win.clone();
+    win2.position.x = -1;
+    g.add(body, roof, door, win, win2);
+  } else if (id === "memo") {
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.6, 2), wood);
+    body.position.y = 0.8;
+    const roof = roofMesh(2.7, 1.3, 2.4, roofM);
+    roof.position.y = 1.6;
+    const chim = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.9, 0.35), mat(0x8f8778));
+    chim.position.set(0.6, 2.4, -0.3);
+    const win = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.45, 0.05), glow);
+    win.position.set(0, 0.95, 1.01);
+    g.add(body, roof, chim, win);
+  } else if (id === "stats") {
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.5, 2.2, 32), white);
+    body.position.y = 1.1;
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(1.45, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xc9ccc6, { roughness: 0.35, metalness: 0.5 }));
+    dome.position.y = 2.2;
+    const slit = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.2, 1.5), dark);
+    slit.position.set(0, 2.7, 0.4);
+    slit.rotation.x = -0.5;
+    g.add(body, dome, slit);
+  } else if (id === "contenus") {
+    const tent = new THREE.Mesh(new THREE.ConeGeometry(2, 2.7, 32), mat(0xd9c49a));
+    tent.position.y = 1.35;
+    const door = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.4, 3, 1, true, 0, Math.PI * 0.6), dark);
+    door.position.set(0, 0.7, 1.05);
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8), dark);
+    pole.position.y = 3.1;
+    const pen = clothFlag(COLORS.lime, 0.9, 0.5);
+    pen.position.set(0.04, 3.65, 0);
+    g.add(tent, door, pole, pen);
+    g.userData.flag = pen;
+  }
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return g;
+}
+
 function dotTexture() {
   const c = document.createElement("canvas");
   c.width = c.height = 64;
@@ -490,7 +598,7 @@ function disposeTree(obj) {
 
 /* ---------- Scène ---------- */
 
-export function createScene(container, { onSelect, onHover } = {}) {
+export function createScene(container, { onSelect, onHover, onStation, onProximity } = {}) {
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -533,7 +641,50 @@ export function createScene(container, { onSelect, onHover } = {}) {
   scene.add(terrain);
   scene.add(buildLake());
   const curve = buildTrailCurve();
-  scene.add(buildForest(curve));
+  const stations = stationSpots(curve);
+  const avoid = [];
+  stations.forEach((st) => {
+    avoid.push({ x: st.x, z: st.z, r: 5.5 });
+    if (st.id !== "trophees") avoid.push({ x: st.x - st.ox * 6, z: st.z - st.oz * 6, r: 4.5 });
+  });
+  avoid.push({ x: CAMP.x, z: CAMP.z, r: 14 });
+  // Chemin qui relie le camp au départ du sentier
+  const start = curve.getPointAt(0);
+  const campPath = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(CAMP.x, 0, CAMP.z),
+    new THREE.Vector3((CAMP.x * 2 + start.x) / 3 + 3, 0, (CAMP.z * 2 + start.z) / 3),
+    new THREE.Vector3(start.x, 0, start.z),
+  ]);
+  for (let i = 0; i < 20; i++) {
+    const q = campPath.getPointAt(i / 19);
+    avoid.push({ x: q.x, z: q.z, r: 4 });
+  }
+  scene.add(ribbon(campPath, 0, 1, 2.1, COLORS.trailEdge, 0.12, 1), ribbon(campPath, 0, 1, 1.5, COLORS.trail, 0.16, 2));
+  // Placette du village
+  scene.add(groundRing(CAMP.x, CAMP.z, 0, 5, COLORS.trail, 1));
+  scene.add(buildForest(curve, avoid));
+  const stationRings = [];
+  stations.forEach((st) => {
+    const ring = groundRing(st.x, st.z, 3.1, 3.6, COLORS.lime, 0.95);
+    const fill = groundRing(st.x, st.z, 0, 3.1, 0xffffff, 0.28);
+    scene.add(ring, fill);
+    stationRings.push(ring);
+    let top = st.y + 5;
+    if (st.id !== "trophees") {
+      const house = buildHouse(st.id);
+      const hx = st.x - st.ox * 6.2;
+      const hz = st.z - st.oz * 6.2;
+      house.position.set(hx, heightAt(hx, hz) - 0.1, hz);
+      house.rotation.y = Math.atan2(st.ox, st.oz);
+      house.scale.setScalar(1.5);
+      scene.add(house);
+      st.house = house;
+      top = house.position.y + 6.4;
+    } else {
+      top = st.y + 8.2;
+    }
+    st.anchor = new THREE.Vector3(st.x, top, st.z);
+  });
   const clouds = buildClouds();
   scene.add(clouds);
   const dotMap = dotTexture();
@@ -554,6 +705,106 @@ export function createScene(container, { onSelect, onHover } = {}) {
   const runner = buildRunner();
   scene.add(runner);
 
+  /* --- Étiquettes flottantes (HTML) --- */
+  const layer = document.createElement("div");
+  layer.className = "scene-labels";
+  document.body.appendChild(layer);
+  const pins = [];
+  function makePin(anchor, html, data, cls = "") {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "pin " + cls;
+    b.innerHTML = html;
+    Object.entries(data).forEach(([k, v]) => (b.dataset[k] = v));
+    layer.appendChild(b);
+    const pin = { el: b, anchor };
+    pins.push(pin);
+    return pin;
+  }
+  stations.forEach((st) => {
+    makePin(st.anchor, `<span class="pin-num">${st.num}</span><span class="pin-text"><small>${st.small}</small>${st.title}</span>`, { station: st.id }, "pin-station");
+  });
+  layer.addEventListener("click", (e) => {
+    const b = e.target.closest(".pin");
+    if (!b) return;
+    if (b.dataset.station && onStation) onStation(b.dataset.station);
+    if (b.dataset.item && onSelect) onSelect(b.dataset.item);
+  });
+  let itemPins = [];
+  const pv = new THREE.Vector3();
+  function updatePins() {
+    if (!layer.offsetParent && getComputedStyle(layer).display === "none") return;
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    for (const pin of pins) {
+      pv.copy(pin.anchor).project(camera);
+      const vis = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05;
+      pin.el.style.visibility = vis ? "visible" : "hidden";
+      if (!vis) continue;
+      const d = camera.position.distanceTo(pin.anchor);
+      const k = THREE.MathUtils.clamp(110 / d, 0.72, 1.05);
+      pin.el.style.transform = `translate(${((pv.x + 1) / 2) * w}px, ${((1 - pv.y) / 2) * h}px) translate(-50%, -100%) scale(${k.toFixed(3)})`;
+      pin.el.style.zIndex = String(1000 - Math.round(d));
+    }
+  }
+
+  /* --- Balade : clavier (ZQSD / WASD / flèches) ou clic au sol --- */
+  let active = true;
+  let roam = false;
+  let walkTarget = null;
+  let heading = 0;
+  let near = null;
+  const runnerPos = new THREE.Vector3();
+  const keys = { f: 0, b: 0, l: 0, r: 0 };
+  const KEYMAP = { KeyW: "f", ArrowUp: "f", KeyS: "b", ArrowDown: "b", KeyA: "l", ArrowLeft: "l", KeyD: "r", ArrowRight: "r" };
+  const typing = (e) => e.target.closest && e.target.closest("input, textarea, select, [contenteditable]");
+  window.addEventListener("keydown", (e) => {
+    if (!active || typing(e) || document.querySelector("dialog[open]")) return;
+    const k = KEYMAP[e.code];
+    if (k) {
+      keys[k] = 1;
+      e.preventDefault();
+    } else if (e.key === "Enter" && near) {
+      e.preventDefault();
+      activate(near);
+    } else if (e.key === "Escape" && roam) {
+      backToTrail();
+    }
+  });
+  window.addEventListener("keyup", (e) => {
+    const k = KEYMAP[e.code];
+    if (k) keys[k] = 0;
+  });
+  window.addEventListener("blur", () => Object.keys(keys).forEach((k) => (keys[k] = 0)));
+
+  function activate(n) {
+    if (n.type === "station" && onStation) onStation(n.id);
+    if (n.type === "item" && onSelect) onSelect(n.id);
+  }
+  function startRoam() {
+    if (!roam) {
+      roam = true;
+      if (sphGoal.radius > 70) sphGoal.radius = 52;
+      sphGoal.phi = Math.min(sphGoal.phi, 1.0);
+    }
+  }
+  function backToTrail() {
+    roam = false;
+    walkTarget = null;
+    setNear(null);
+  }
+  function setNear(n) {
+    const key = n ? n.type + n.id : "";
+    const prev = near ? near.type + near.id : "";
+    if (key === prev) return;
+    near = n;
+    if (onProximity) onProximity(n);
+  }
+
+  const clickMark = groundRing(0, 0, 0.7, 1.0, COLORS.dark, 0.6);
+  clickMark.visible = false;
+  scene.add(clickMark);
+
   let trailGroup = new THREE.Group();
   scene.add(trailGroup);
   let markers = new THREE.Group();
@@ -565,9 +816,10 @@ export function createScene(container, { onSelect, onHover } = {}) {
   let avatarTarget = 0.02;
 
   /* --- Caméra orbitale maison --- */
-  const target = new THREE.Vector3(0, 14, 0);
+  const HOME = new THREE.Vector3(CAMP.x * 0.76, 8, CAMP.z * 0.76);
+  const target = HOME.clone();
   const targetGoal = target.clone();
-  const sph = { theta: 0.9, phi: 1.02, radius: 150 };
+  const sph = { theta: CAMP_ANGLE + 0.12, phi: 0.98, radius: 150 };
   const sphGoal = { ...sph };
   let lastInteraction = 0;
 
@@ -624,6 +876,19 @@ export function createScene(container, { onSelect, onHover } = {}) {
     if (wasClick && e.type === "pointerup") {
       const id = pick(e.clientX, e.clientY);
       if (id && onSelect) onSelect(id);
+      else if (!id) {
+        const hit = raycaster.intersectObject(terrain, false)[0];
+        if (hit) {
+          walkTarget = hit.point.clone();
+          startRoam();
+          scene.remove(clickMark);
+          disposeTree(clickMark);
+          const m = groundRing(hit.point.x, hit.point.z, 0.7, 1.0, COLORS.dark, 0.6);
+          m.userData.life = 0;
+          clickMarks.push(m);
+          scene.add(m);
+        }
+      }
     }
     if (pointers.size === 0) dragStart = null;
   };
@@ -641,6 +906,7 @@ export function createScene(container, { onSelect, onHover } = {}) {
   );
 
   const raycaster = new THREE.Raycaster();
+  const clickMarks = [];
   const ndc = new THREE.Vector2();
   function pick(cx, cy) {
     const r = el.getBoundingClientRect();
@@ -711,7 +977,19 @@ export function createScene(container, { onSelect, onHover } = {}) {
     });
 
     const tAv = avatarIndex >= 0 ? itemT[avatarIndex] : 0.015;
+    if (Math.abs(tAv - avatarTarget) > 1e-6) backToTrail();
     avatarTarget = tAv;
+
+    itemPins.forEach((p) => { p.el.remove(); pins.splice(pins.indexOf(p), 1); });
+    itemPins = items.filter((it) => it.pin).map((it) => {
+      const m = markerById.get(it.id);
+      const anchor = m.position.clone().add(new THREE.Vector3(0, 6.6, 0));
+      const lab = { publie: "Publié", programme: "Programmé", pret: "Prêt", redaction: "En rédaction", idee: "Idée" }[it.state];
+      const short = it.title.length > 34 ? it.title.slice(0, 32) + "…" : it.title;
+      const span = document.createElement("span");
+      span.textContent = short;
+      return makePin(anchor, `<span class="pin-dot pin-${it.state}"></span><span class="pin-text"><small>${it.pin === true ? lab : it.pin}</small>${span.innerHTML}</span>`, { item: it.id }, "pin-item");
+    });
 
     scene.remove(trailGroup);
     disposeTree(trailGroup);
@@ -734,15 +1012,18 @@ export function createScene(container, { onSelect, onHover } = {}) {
     lastInteraction = performance.now();
   }
   function focusRunner() {
-    targetGoal.copy(runner.position).add(new THREE.Vector3(0, 2, 0));
+    backToTrail();
+    targetGoal.copy(curve.getPointAt(avatarTarget)).add(new THREE.Vector3(0, 2, 0));
     sphGoal.radius = 46;
     lastInteraction = performance.now();
   }
   const overviewRadius = () => (camera.aspect < 0.8 ? 205 : 128);
   function overview() {
-    targetGoal.set(0, 14, 0);
+    backToTrail();
+    targetGoal.copy(HOME);
     sphGoal.radius = overviewRadius();
-    sphGoal.phi = 1.02;
+    sphGoal.phi = 0.98;
+    sphGoal.theta = CAMP_ANGLE + 0.12 + Math.round((sphGoal.theta - CAMP_ANGLE) / (Math.PI * 2)) * Math.PI * 2;
   }
   function celebrate(id) {
     const m = markerById.get(id);
@@ -755,12 +1036,18 @@ export function createScene(container, { onSelect, onHover } = {}) {
     const h = container.clientHeight || window.innerHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
+    // Sur grand écran, la colonne de droite masque une partie de la vue : on recentre la scène à gauche
+    if (w > 1080) camera.setViewOffset(w, h, 170, 0, w, h);
+    else camera.clearViewOffset();
     camera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resize);
   resize();
   sph.radius = sphGoal.radius = overviewRadius();
 
+  const fw = new THREE.Vector3();
+  const rt = new THREE.Vector3();
+  const mv = new THREE.Vector3();
   const timer = new THREE.Timer();
   let running = true;
   function frame() {
@@ -783,9 +1070,79 @@ export function createScene(container, { onSelect, onHover } = {}) {
     avatarT += (avatarTarget - avatarT) * (reducedMotion ? 1 : Math.min(1, dt * 1.4));
     const ap = curve.getPointAt(THREE.MathUtils.clamp(avatarT, 0, 1));
     const look = curve.getPointAt(THREE.MathUtils.clamp(avatarT + 0.01, 0, 1));
-    runner.position.set(ap.x, ap.y - 0.3 + (reducedMotion ? 0 : Math.abs(Math.sin(time * 4)) * 0.18), ap.z);
-    runner.lookAt(look.x, runner.position.y, look.z);
+
+    let moving = false;
+    const mx = keys.r - keys.l;
+    const mz = keys.f - keys.b;
+    if (active && (mx || mz)) {
+      startRoam();
+      walkTarget = null;
+      camera.getWorldDirection(fw);
+      fw.y = 0;
+      fw.normalize();
+      rt.set(-fw.z, 0, fw.x);
+      mv.copy(fw).multiplyScalar(mz).addScaledVector(rt, mx).normalize();
+      moving = true;
+    } else if (walkTarget) {
+      mv.set(walkTarget.x - runnerPos.x, 0, walkTarget.z - runnerPos.z);
+      const d = mv.length();
+      if (d < 0.5) walkTarget = null;
+      else {
+        mv.divideScalar(d);
+        moving = true;
+      }
+    }
+    if (roam) {
+      if (moving) {
+        runnerPos.x += mv.x * 15 * dt;
+        runnerPos.z += mv.z * 15 * dt;
+        const r = Math.hypot(runnerPos.x, runnerPos.z);
+        if (r > 112) runnerPos.multiplyScalar(112 / r);
+        heading = Math.atan2(mv.x, mv.z);
+        lastInteraction = performance.now();
+      }
+      runnerPos.y = Math.max(heightAt(runnerPos.x, runnerPos.z), LAKE.level);
+      targetGoal.set(runnerPos.x, runnerPos.y + 2, runnerPos.z);
+    } else {
+      runnerPos.set(ap.x, ap.y - 0.35, ap.z);
+      heading = Math.atan2(look.x - ap.x, look.z - ap.z);
+    }
+    const bob = reducedMotion ? 0 : Math.abs(Math.sin(time * (moving ? 11 : 4))) * (moving ? 0.35 : 0.18);
+    runner.position.set(runnerPos.x, runnerPos.y - 0.05 + bob, runnerPos.z);
+    let dh = heading - runner.rotation.y;
+    dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+    runner.rotation.y += dh * Math.min(1, dt * 10);
+    runner.rotation.x = THREE.MathUtils.lerp(runner.rotation.x, moving ? 0.18 : 0, Math.min(1, dt * 8));
     runner.userData.halo.scale.setScalar(1 + (reducedMotion ? 0 : Math.sin(time * 2.5) * 0.12));
+
+    // Lieu ou balise à portée du coureur
+    if (roam) {
+      let best = null;
+      let bestD = Infinity;
+      for (const st of stations) {
+        const d = Math.hypot(st.x - runnerPos.x, st.z - runnerPos.z);
+        if (d < 3.8 && d < bestD) { best = { type: "station", id: st.id, title: st.title, small: st.small }; bestD = d; }
+      }
+      if (!best) {
+        markers.children.forEach((m) => {
+          const d = Math.hypot(m.position.x - runnerPos.x, m.position.z - runnerPos.z);
+          if (d < 3.6 && d < bestD) { best = { type: "item", id: m.userData.hit.userData.itemId }; bestD = d; }
+        });
+      }
+      setNear(best);
+    }
+    stationRings.forEach((r, i) => {
+      const on = near && near.type === "station" && near.id === stations[i].id;
+      r.material.color.setHex(on ? 0xffffff : COLORS.lime);
+      r.scale.setScalar(on ? 1.06 : 1 + (reducedMotion ? 0 : Math.sin(time * 2 + i) * 0.025));
+    });
+    for (let i = clickMarks.length - 1; i >= 0; i--) {
+      const m = clickMarks[i];
+      m.userData.life += dt;
+      m.scale.setScalar(1 + m.userData.life * 1.5);
+      m.material.opacity = Math.max(0, 0.6 - m.userData.life * 0.8);
+      if (m.userData.life > 0.8) { scene.remove(m); disposeTree(m); clickMarks.splice(i, 1); }
+    }
 
     if (!reducedMotion) {
       markers.children.forEach((m) => {
@@ -793,6 +1150,7 @@ export function createScene(container, { onSelect, onHover } = {}) {
         if (m.userData.orb) m.userData.orb.position.y = 1.2 + Math.sin(time * 1.6 + m.userData.phase) * 0.22;
       });
       waveFlag(sFlag, time * 0.8, 0);
+      stations.forEach((st) => st.house?.userData.flag && waveFlag(st.house.userData.flag, time, st.num));
       clouds.children.forEach((c) => {
         c.userData.angle += dt * c.userData.speed;
         c.position.x = Math.cos(c.userData.angle) * c.userData.radius;
@@ -818,6 +1176,7 @@ export function createScene(container, { onSelect, onHover } = {}) {
     }
 
     renderer.render(scene, camera);
+    updatePins();
   }
   frame();
 
@@ -826,5 +1185,13 @@ export function createScene(container, { onSelect, onHover } = {}) {
     else if (!running) { running = true; timer.reset?.(); frame(); }
   });
 
-  return { setItems, focus, focusRunner, overview, celebrate, resize };
+  function setActive(on) {
+    active = on;
+    if (!on) Object.keys(keys).forEach((k) => (keys[k] = 0));
+  }
+  function activateNear() {
+    if (near) activate(near);
+  }
+
+  return { setItems, focus, focusRunner, overview, celebrate, resize, setActive, activateNear, backToTrail };
 }
