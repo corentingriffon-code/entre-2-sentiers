@@ -434,12 +434,17 @@ function syncBar() {
     return `<span class="sync-chip sync-${st || "off"}" style="--net:${color}" title="${esc(x?.message || "")}"><i class="net-dot"></i>${label} · ${text}</span>`;
   };
   const errors = [r.site, r.instagram].filter((x) => x?.status === "error").map((x) => x.message);
+  const missing = [
+    ["Site", r.site],
+    ["Instagram", r.instagram],
+  ].filter(([, x]) => x?.status === "off" && x.missing?.length).map(([l, x]) => `${l} : variable${x.missing.length > 1 ? "s" : ""} ${x.missing.join(", ")} introuvable${x.missing.length > 1 ? "s" : ""} sur Vercel (vérifie le nom exact et la case Production, puis Redeploy).`);
   return `<div class="sync-bar">
     ${chip("Site (Google Analytics)", r.site, NETWORKS.site.color)}
     ${chip("Instagram", r.instagram, NETWORKS.instagram.color)}
     <span class="muted small">LinkedIn et Facebook : saisie à la main · dernière synchro ${ago(r.at)}</span>
     <button type="button" class="btn btn-ghost btn-sm" data-sync ${syncing ? "disabled" : ""}>${syncing ? "Synchro…" : "↻ Synchroniser"}</button>
     ${errors.map((m) => `<p class="sync-error">${esc(m)}</p>`).join("")}
+    ${missing.map((m) => `<p class="sync-missing">${esc(m)}</p>`).join("")}
   </div>`;
 }
 async function runSync({ quiet = false } = {}) {

@@ -681,3 +681,4 @@ body:not([data-screen="sentier"]) .keys-hint { display: none; }
 .sync-chip.sync-error { border-color: var(--late); color: var(--late); }
 .sync-error { flex-basis: 100%; font-size: 0.78rem; color: var(--late); }
 .auto-tag { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 1px 5px; border-radius: 4px; background: var(--sage); color: var(--dark); }
+.sync-missing { flex-basis: 100%; font-size: 0.78rem; color: var(--muted); }

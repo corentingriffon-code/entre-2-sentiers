@@ -62,10 +62,17 @@ function isoWeekMonday(code) {
 /* Valeurs collées à la main : on enlève espaces, guillemets et virgule finale */
 const clean = (v) => (v || "").trim().replace(/,$/, "").replace(/^["']|["']$/g, "").trim();
 
-const VERSION = "2026-10-14b";
+const VERSION = "2026-10-14c";
+
+/* Lit une variable d'environnement sans tenir compte des majuscules (GA_Service_account = GA_SERVICE_ACCOUNT) */
+function env(name) {
+  if (process.env[name] != null) return process.env[name];
+  const k = Object.keys(process.env).find((x) => x.toUpperCase() === name);
+  return k ? process.env[k] : "";
+}
 
 function credentials() {
-  const raw = (process.env.GA_SERVICE_ACCOUNT || "").trim();
+  const raw = (env("GA_SERVICE_ACCOUNT") || "").trim();
   if (raw) {
     let sa;
     try {
@@ -79,19 +86,24 @@ function credentials() {
     return { email: (sa.client_email || "").trim(), key: sa.private_key, source: "GA_SERVICE_ACCOUNT" };
   }
   return {
-    email: clean(process.env.GA_CLIENT_EMAIL),
-    key: clean(process.env.GA_PRIVATE_KEY).replace(/\\n/g, "\n"),
+    email: clean(env("GA_CLIENT_EMAIL")),
+    key: clean(env("GA_PRIVATE_KEY")).replace(/\\n/g, "\n"),
     source: "GA_CLIENT_EMAIL + GA_PRIVATE_KEY",
   };
 }
 
 module.exports = async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  const property = clean(process.env.GA_PROPERTY_ID).replace(/^properties\//, "");
+  const property = clean(env("GA_PROPERTY_ID")).replace(/^properties\//, "");
   const cred = credentials();
   if (cred.invalid) return res.status(200).json({ configured: true, version: VERSION, error: cred.invalid });
   const { email, key, source } = cred;
-  if (!property || !email || !key) return res.status(200).json({ configured: false, version: VERSION });
+  if (!property || !email || !key) {
+    const missing = [];
+    if (!property) missing.push("GA_PROPERTY_ID");
+    if (!email || !key) missing.push("GA_SERVICE_ACCOUNT");
+    return res.status(200).json({ configured: false, version: VERSION, missing });
+  }
   try {
     const token = await googleToken(email, key);
     const [weeks, pages] = await Promise.all([
