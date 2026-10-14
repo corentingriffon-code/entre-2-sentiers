@@ -1,0 +1,911 @@
+/* =========================================================
+   Camp de base. Interface
+   Vues : Sentier (3D) · Planning · Contenus · Stats · Trophées
+   Données : localStorage (clé STORE_KEY), export / import JSON.
+   ========================================================= */
+
+import { NETWORKS, NETWORK_ORDER, SOCIALS, PILLARS, KINDS, STATUSES, STAT_FIELDS, CHAR_LIMITS, seedState } from "./data.js";
+import {
+  XP, LEVELS, levelFor, computeXP, questsForWeek, streak, badges, nextMission, hasStats,
+  today, addDays, weekStart, parseDate, ymd,
+} from "./game.js";
+
+const STORE_KEY = "e2s-camp-de-base-v1";
+const $ = (s, root = document) => root.querySelector(s);
+const $$ = (s, root = document) => [...root.querySelectorAll(s)];
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const uid = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const fmt = (n) => Math.round(n).toLocaleString("fr-FR");
+const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+const DAYS = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."];
+const fmtDate = (s) => {
+  if (!s) return "Sans date";
+  const d = parseDate(s);
+  return `${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 4)}${MONTHS[d.getMonth()].length > 4 ? "." : ""}`;
+};
+
+/* ---------- État ---------- */
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s && Array.isArray(s.contents) && Array.isArray(s.pubs)) return s;
+    }
+  } catch (e) { /* stockage indisponible : on repart des données de départ */ }
+  return seedState();
+}
+let state = load();
+let storageOk = true;
+function save() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  } catch (e) {
+    if (storageOk) toast("Impossible d'enregistrer dans ce navigateur : pense à exporter tes données.", "warn");
+    storageOk = false;
+  }
+}
+
+const contentById = (id) => state.contents.find((c) => c.id === id);
+const pubsOf = (id) => state.pubs.filter((p) => p.contentId === id);
+
+/* Statut affiché d'un contenu (programmé = au moins une publication prévue) */
+function displayState(c) {
+  if (c.status === "publie") return "publie";
+  if (pubsOf(c.id).some((p) => p.status === "prevu")) return "programme";
+  return c.status;
+}
+function keyDate(c) {
+  const ps = pubsOf(c.id).filter((p) => p.date);
+  const pub = ps.filter((p) => p.status === "publie").map((p) => p.date).sort()[0];
+  if (c.status === "publie") return pub || ps.map((p) => p.date).sort()[0] || c.createdAt || "";
+  const planned = ps.filter((p) => p.status === "prevu").map((p) => p.date).sort()[0];
+  return planned || pub || "";
+}
+
+/* ---------- Progression : récompenses visibles ---------- */
+
+let lastXP = computeXP(state);
+let lastLevel = levelFor(lastXP).index;
+if (state.seenBadges == null) state.seenBadges = badges(state).filter((b) => b.unlocked).map((b) => b.id);
+
+function afterChange({ celebrateId = null } = {}) {
+  save();
+  const xp = computeXP(state);
+  const delta = xp - lastXP;
+  if (delta > 0) toast(`+${fmt(delta)} m de D+`, "xp");
+  else if (delta < 0) toast(`${fmt(delta)} m de D+`, "muted");
+  const lvl = levelFor(xp);
+  if (lvl.index > lastLevel) showLevelUp(lvl);
+  lastXP = xp;
+  lastLevel = lvl.index;
+
+  const unlocked = badges(state).filter((b) => b.unlocked);
+  unlocked.forEach((b) => {
+    if (!state.seenBadges.includes(b.id)) {
+      state.seenBadges.push(b.id);
+      toast(`${b.icon} Trophée débloqué : ${b.name}`, "badge");
+    }
+  });
+  save();
+  renderAll();
+  if (celebrateId && scene) {
+    scene.celebrate(celebrateId);
+  }
+}
+
+/* ---------- Scène 3D ---------- */
+
+let scene = null;
+const tooltip = $("#tooltip");
+
+async function initScene() {
+  try {
+    const mod = await import("./scene.js");
+    scene = mod.createScene($("#scene"), {
+      onSelect: (id) => openEditor(id),
+      onHover: (h) => {
+        if (!h) { tooltip.hidden = true; return; }
+        const c = contentById(h.id);
+        if (!c) return;
+        const st = displayState(c);
+        const label = { publie: "Publié", programme: "Programmé", pret: "Prêt", redaction: "En rédaction", idee: "Idée" }[st];
+        const d = keyDate(c);
+        tooltip.innerHTML = `<strong>${esc(c.title)}</strong><span>${label}${d ? " · " + fmtDate(d) : ""}</span>`;
+        tooltip.hidden = false;
+        tooltip.style.left = `${h.x + 14}px`;
+        tooltip.style.top = `${h.y + 14}px`;
+      },
+    });
+  } catch (e) {
+    scene = null;
+  }
+  if (!scene) {
+    $("#scene-fallback").hidden = false;
+    $("#scene-controls").hidden = true;
+  }
+  renderScene();
+}
+
+function renderScene() {
+  if (!scene) return;
+  const rank = { publie: 0, programme: 1, pret: 2, redaction: 3, idee: 4 };
+  const items = state.contents
+    .map((c) => ({ c, st: displayState(c), d: keyDate(c) }))
+    .sort((a, b) => {
+      const da = a.st === "publie" || a.st === "programme" ? a.d : "";
+      const db = b.st === "publie" || b.st === "programme" ? b.d : "";
+      if (da && db) return da.localeCompare(db) || rank[a.st] - rank[b.st];
+      if (da) return -1;
+      if (db) return 1;
+      return rank[a.st] - rank[b.st] || (a.c.createdAt || "").localeCompare(b.c.createdAt || "");
+    })
+    .map(({ c, st }) => ({
+      id: c.id,
+      title: c.title,
+      state: st,
+      networks: [...new Set(pubsOf(c.id).map((p) => p.network))]
+        .sort((a, b) => NETWORK_ORDER.indexOf(a) - NETWORK_ORDER.indexOf(b))
+        .map((n) => parseInt(NETWORKS[n].color.slice(1), 16)),
+    }));
+  let avatar = -1;
+  items.forEach((it, i) => { if (it.state === "publie") avatar = i; });
+  scene.setItems(items, avatar);
+}
+
+/* ---------- HUD ---------- */
+
+function renderHud() {
+  const xp = computeXP(state);
+  const lvl = levelFor(xp);
+  $("#xp-value").textContent = fmt(xp);
+  $("#level-name").textContent = lvl.name;
+  const bar = $("#level-bar");
+  bar.setAttribute("aria-valuenow", Math.round(lvl.progress * 100));
+  bar.firstElementChild.style.width = `${Math.round(lvl.progress * 100)}%`;
+  $("#level-next").textContent = lvl.next ? `${fmt(lvl.next - xp)} m avant « ${lvl.nextName} »` : "Tu es au-dessus des nuages.";
+  const s = streak(state);
+  $("#streak-value").textContent = s;
+  $("#streak").classList.toggle("is-on", s > 0);
+  $("#goal-input").value = state.settings.weeklyGoal || 2;
+}
+
+/* ---------- Colonne latérale : mission, défis, à venir ---------- */
+
+function questHTML(q) {
+  const pct = Math.min(100, Math.round((q.value / q.goal) * 100));
+  const detail = q.detail
+    ? `<span class="quest-nets">${q.detail.map((d) => `<span class="net-chip ${d.ok ? "" : "is-off"}" style="--net:${NETWORKS[d.n].color}">${NETWORKS[d.n].label}</span>`).join("")}</span>`
+    : "";
+  return `<li class="quest ${q.done ? "is-done" : ""}">
+    <div class="quest-top"><span class="quest-check" aria-hidden="true">${q.done ? "✓" : ""}</span><span>${esc(q.label)}</span><span class="quest-count">${Math.min(q.value, q.goal)}/${q.goal}</span></div>
+    <div class="bar bar-sm"><span style="width:${pct}%"></span></div>${detail}
+  </li>`;
+}
+
+function renderSide() {
+  const m = nextMission(state);
+  const quests = questsForWeek(state, weekStart(today()));
+  const done = quests.filter((q) => q.done).length;
+  const t = today();
+  const upcoming = state.pubs
+    .filter((p) => p.status === "prevu" && (!p.date || p.date >= addDays(t, -30)))
+    .sort((a, b) => ((a.date || "9") + (a.time || "")).localeCompare((b.date || "9") + (b.time || "")))
+    .slice(0, 6);
+  const toWrite = state.contents.filter((c) => c.status === "idee" || c.status === "redaction").length;
+  const ready = state.contents.filter((c) => c.status === "pret").length;
+
+  $("#side").innerHTML = `
+    <section class="card mission">
+      <p class="eyebrow">Prochaine étape</p>
+      <p class="mission-text">${esc(m.text)}</p>
+      <div class="mission-foot">
+        <span class="xp-pill">+${m.xp} m</span>
+        <button class="btn btn-primary btn-sm" type="button" data-mission="${m.contentId || ""}">${m.contentId ? "J'y vais" : "Nouvelle idée"}</button>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-head"><p class="eyebrow">Défis de la semaine</p><span class="muted">${done}/4 · +${XP.quest} m chacun</span></div>
+      <ul class="quests">${quests.map(questHTML).join("")}</ul>
+    </section>
+    <section class="card">
+      <div class="card-head"><p class="eyebrow">À publier</p><button class="link" type="button" data-goto="planning">Planning →</button></div>
+      ${upcoming.length ? `<ul class="upcoming">${upcoming.map((p) => {
+        const c = contentById(p.contentId);
+        const late = p.date && p.date < t;
+        return `<li><button type="button" data-open="${p.contentId}">
+          <span class="net-dot" style="--net:${NETWORKS[p.network].color}" aria-hidden="true"></span>
+          <span class="up-title">${esc(c?.title || "Sans titre")}</span>
+          <span class="up-meta ${late ? "is-late" : ""}">${NETWORKS[p.network].label} · ${!p.date ? "date à choisir" : late ? "en retard" : p.date === t ? "aujourd'hui" : fmtDate(p.date)}</span>
+        </button></li>`;
+      }).join("")}</ul>` : `<p class="empty">Rien de programmé. Glisse un contenu prêt dans le planning.</p>`}
+      <p class="side-foot"><strong>${toWrite}</strong> à écrire · <strong>${ready}</strong> prêts</p>
+    </section>`;
+}
+
+/* ---------- Vue Planning (calendrier) ---------- */
+
+let calMonth = today().slice(0, 7);
+
+function renderPlanning() {
+  const [y, m] = calMonth.split("-").map(Number);
+  const first = new Date(y, m - 1, 1);
+  const start = weekStart(ymd(first));
+  const last = new Date(y, m, 0);
+  const end = addDays(weekStart(ymd(last)), 6);
+  const t = today();
+  const days = [];
+  for (let d = start; d <= end; d = addDays(d, 1)) days.push(d);
+
+  const toPlan = state.contents.filter((c) => (c.status === "pret" || c.status === "redaction") && !pubsOf(c.id).some((p) => p.status === "prevu"));
+
+  $("#panel").innerHTML = `
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Planning</p>
+        <h1>${MONTHS[m - 1]} ${y}</h1>
+      </div>
+      <div class="panel-tools">
+        <button class="btn btn-ghost btn-sm" type="button" data-cal="-1" aria-label="Mois précédent">←</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-cal="0">Aujourd'hui</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-cal="1" aria-label="Mois suivant">→</button>
+      </div>
+    </div>
+    <div class="planning">
+      <div class="calendar" role="grid" aria-label="Calendrier de ${MONTHS[m - 1]} ${y}">
+        ${DAYS.map((d) => `<div class="cal-dow" role="columnheader">${d}</div>`).join("")}
+        ${days.map((d) => {
+          const ps = state.pubs.filter((p) => p.date === d).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+          const out = d.slice(0, 7) !== calMonth;
+          return `<div class="cal-day ${out ? "is-out" : ""} ${d === t ? "is-today" : ""}" data-day="${d}" role="gridcell">
+            <button class="cal-num" type="button" data-addday="${d}" title="Programmer le ${fmtDate(d)}">${parseDate(d).getDate()}<span class="cal-plus" aria-hidden="true">+</span></button>
+            ${ps.map((p) => {
+              const c = contentById(p.contentId);
+              const late = p.status === "prevu" && p.date < t;
+              return `<button type="button" class="pub-chip ${p.status === "publie" ? "is-done" : ""} ${late ? "is-late" : ""}" draggable="true" data-pub="${p.id}" data-open="${p.contentId}" style="--net:${NETWORKS[p.network].color}" title="${esc(c?.title)} · ${NETWORKS[p.network].label}${p.status === "publie" ? " · publié" : ""}">
+                <span class="pub-net">${NETWORKS[p.network].short}</span><span class="pub-title">${esc(c?.title || "Sans titre")}</span>
+              </button>`;
+            }).join("")}
+          </div>`;
+        }).join("")}
+      </div>
+      <aside class="toplan">
+        <p class="eyebrow">À programmer</p>
+        <p class="muted small">Glisse un contenu sur un jour du calendrier (+${XP.pubPlanned} m).</p>
+        ${toPlan.length ? toPlan.map((c) => `<button type="button" class="plan-card" draggable="true" data-content="${c.id}" data-open="${c.id}">
+          <span class="status-tag st-${c.status}">${STATUSES[c.status]}</span>
+          <span>${esc(c.title)}</span>
+        </button>`).join("") : `<p class="empty">Tout ce qui est prêt est déjà programmé.</p>`}
+        <div class="cal-legend">
+          ${NETWORK_ORDER.map((n) => `<span><i class="net-dot" style="--net:${NETWORKS[n].color}"></i>${NETWORKS[n].label}</span>`).join("")}
+          <span><i class="chip-sample"></i>Prévu</span><span><i class="chip-sample is-done"></i>Publié</span>
+        </div>
+      </aside>
+    </div>`;
+}
+
+/* ---------- Vue Contenus (tableau par étape) ---------- */
+
+function contentCard(c) {
+  const ps = pubsOf(c.id);
+  const st = displayState(c);
+  const nets = [...new Set(ps.map((p) => p.network))].sort((a, b) => NETWORK_ORDER.indexOf(a) - NETWORK_ORDER.indexOf(b));
+  const next = { idee: "redaction", redaction: "pret", pret: "publie" }[c.status];
+  const nextLabel = { redaction: "Commencer", pret: "C'est prêt", publie: "Publié !" }[next];
+  const gain = next ? XP.content[next] - XP.content[c.status] : 0;
+  const d = keyDate(c);
+  return `<article class="k-card" draggable="true" data-content="${c.id}">
+    <button type="button" class="k-open" data-open="${c.id}">
+      <span class="k-meta"><span>${KINDS[c.kind] || "Contenu"}</span>${c.pillar ? `<span>· ${PILLARS[c.pillar]}</span>` : ""}</span>
+      <span class="k-title">${esc(c.title)}</span>
+    </button>
+    <div class="k-foot">
+      <span class="k-nets">${nets.map((n) => {
+        const done = ps.some((p) => p.network === n && p.status === "publie");
+        return `<span class="net-chip ${done ? "" : "is-off"}" style="--net:${NETWORKS[n].color}" title="${NETWORKS[n].label} · ${done ? "publié" : "prévu"}">${NETWORKS[n].short}</span>`;
+      }).join("")}${st === "programme" ? `<span class="k-date">${fmtDate(d)}</span>` : ""}${c.status === "publie" && d ? `<span class="k-date">${fmtDate(d)}</span>` : ""}</span>
+      ${next && next !== "publie" ? `<button type="button" class="btn btn-ghost btn-xs" data-advance="${c.id}">${nextLabel} <span class="xp-pill">+${gain}</span></button>` : ""}
+    </div>
+  </article>`;
+}
+
+let contentFilter = "";
+
+function renderContenus() {
+  const cols = ["idee", "redaction", "pret", "publie"];
+  const hint = { idee: "Le sac à idées", redaction: "Sur le clavier", pret: "Au départ", publie: "Franchi la ligne" };
+  const q = contentFilter.trim().toLowerCase();
+  const list = state.contents.filter((c) => !q || c.title.toLowerCase().includes(q));
+  $("#panel").innerHTML = `
+    <div class="panel-head">
+      <div><p class="eyebrow">Contenus</p><h1>Du sac à idées à la ligne d'arrivée</h1></div>
+      <div class="panel-tools">
+        <input type="search" class="input" id="content-search" placeholder="Rechercher…" value="${esc(contentFilter)}" aria-label="Rechercher un contenu">
+      </div>
+    </div>
+    <div class="kanban">
+      ${cols.map((s) => {
+        const items = list.filter((c) => c.status === s).sort((a, b) => {
+          if (s === "publie") return keyDate(b).localeCompare(keyDate(a));
+          return (displayState(b) === "programme") - (displayState(a) === "programme") || (keyDate(a) || "9").localeCompare(keyDate(b) || "9");
+        });
+        return `<section class="k-col" data-col="${s}">
+          <header class="k-head"><h2>${STATUSES[s]}</h2><span class="k-count">${items.length}</span><span class="k-hint">${hint[s]}</span></header>
+          ${s === "idee" ? `<form class="quick-idea" data-quick><input class="input" name="title" placeholder="Nouvelle idée… (+${XP.content.idee} m)" aria-label="Nouvelle idée" required><button class="btn btn-primary btn-sm" type="submit">Ajouter</button></form>` : ""}
+          <div class="k-list">${items.map(contentCard).join("") || `<p class="empty">Rien ici pour l'instant.</p>`}</div>
+        </section>`;
+      }).join("")}
+    </div>`;
+}
+
+/* ---------- Vue Stats ---------- */
+
+let statsNet = "all";
+let statsPeriod = "90";
+
+function renderStats() {
+  const t = today();
+  const from = statsPeriod === "all" ? "" : addDays(t, -Number(statsPeriod));
+  const pubs = state.pubs.filter((p) => p.status === "publie" && (!from || (p.date && p.date >= from)) && (statsNet === "all" || p.network === statsNet));
+  const sum = (arr, k) => arr.reduce((s, p) => s + (Number(p.stats?.[k]) || 0), 0);
+  const eng = (p) => ["likes", "comments", "shares", "saves"].reduce((s, k) => s + (Number(p.stats?.[k]) || 0), 0);
+  const withStats = pubs.filter(hasStats);
+  const imp = sum(withStats, "impressions");
+  const engTotal = withStats.reduce((s, p) => s + eng(p), 0);
+  const rate = imp ? (engTotal / imp) * 100 : 0;
+  const missing = state.pubs.filter((p) => p.status === "publie" && p.network !== "site" && !hasStats(p)).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+  const byNet = NETWORK_ORDER.map((n) => {
+    const ps = withStats.filter((p) => p.network === n);
+    return { n, count: pubs.filter((p) => p.network === n).length, imp: sum(ps, "impressions"), eng: ps.reduce((s, p) => s + eng(p), 0) };
+  }).filter((r) => statsNet === "all" || r.n === statsNet);
+  const maxImp = Math.max(1, ...byNet.map((r) => r.imp));
+
+  const top = [...withStats].sort((a, b) => eng(b) - eng(a) || (Number(b.stats.impressions) || 0) - (Number(a.stats.impressions) || 0)).slice(0, 12);
+  const maxEng = Math.max(1, ...top.map(eng));
+
+  $("#panel").innerHTML = `
+    <div class="panel-head">
+      <div><p class="eyebrow">Stats</p><h1>Le chrono de tes publications</h1></div>
+      <div class="panel-tools filters">
+        <div class="seg" role="group" aria-label="Réseau">
+          ${["all", ...NETWORK_ORDER].map((n) => `<button type="button" data-statnet="${n}" aria-pressed="${statsNet === n}">${n === "all" ? "Tous" : NETWORKS[n].label}</button>`).join("")}
+        </div>
+        <div class="seg" role="group" aria-label="Période">
+          ${[["30", "30 j"], ["90", "90 j"], ["all", "Tout"]].map(([v, l]) => `<button type="button" data-statperiod="${v}" aria-pressed="${statsPeriod === v}">${l}</button>`).join("")}
+        </div>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><span class="tile-label">Publications</span><span class="tile-value">${fmt(pubs.length)}</span><span class="tile-sub">${withStats.length} avec stats</span></div>
+      <div class="tile"><span class="tile-label">Impressions</span><span class="tile-value">${fmt(imp)}</span><span class="tile-sub">sur les publications relevées</span></div>
+      <div class="tile"><span class="tile-label">Interactions</span><span class="tile-value">${fmt(engTotal)}</span><span class="tile-sub">réactions, commentaires, partages, enregistr.</span></div>
+      <div class="tile"><span class="tile-label">Taux d'engagement</span><span class="tile-value">${imp ? rate.toLocaleString("fr-FR", { maximumFractionDigits: 1 }) + " %" : "–"}</span><span class="tile-sub">interactions / impressions</span></div>
+    </div>
+
+    <div class="stats-grid">
+      <section class="card">
+        <div class="card-head"><h2 class="h-card">Impressions par réseau</h2></div>
+        ${imp ? `<ul class="hbars">${byNet.map((r) => `<li title="${NETWORKS[r.n].label} : ${fmt(r.imp)} impressions, ${fmt(r.eng)} interactions, ${r.count} publications">
+          <span class="hb-label"><i class="net-dot" style="--net:${NETWORKS[r.n].color}"></i>${NETWORKS[r.n].label}</span>
+          <span class="hb-track"><span class="hb-bar" style="width:${(r.imp / maxImp) * 100}%;--net:${NETWORKS[r.n].color}"></span></span>
+          <span class="hb-value">${fmt(r.imp)}</span>
+        </li>`).join("")}</ul>` : `<p class="empty">Aucune stat relevée sur cette période. Ouvre une publication et remplis ses compteurs (+${XP.stats} m chacune).</p>`}
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2 class="h-card">Relevé des compteurs</h2><span class="muted">${missing.length} en attente</span></div>
+        ${missing.length ? `<ul class="missing">${missing.slice(0, 8).map((p) => `<li><button type="button" data-open="${p.contentId}" data-focuspub="${p.id}">
+          <i class="net-dot" style="--net:${NETWORKS[p.network].color}"></i>
+          <span class="up-title">${esc(contentById(p.contentId)?.title || "Sans titre")}</span>
+          <span class="up-meta">${NETWORKS[p.network].label} · ${fmtDate(p.date)}</span>
+          <span class="xp-pill">+${XP.stats}</span>
+        </button></li>`).join("")}</ul>` : `<p class="empty">Toutes les publications réseaux ont leurs stats. Bien joué.</p>`}
+      </section>
+    </div>
+
+    <section class="card">
+      <div class="card-head"><h2 class="h-card">Meilleures publications</h2><span class="muted">classées par interactions</span></div>
+      ${top.length ? `<div class="table-wrap"><table class="table">
+        <thead><tr><th scope="col">Publication</th><th scope="col">Réseau</th><th scope="col">Date</th>${STAT_FIELDS.map(([, l]) => `<th scope="col" class="num">${l}</th>`).join("")}<th scope="col">Interactions</th></tr></thead>
+        <tbody>${top.map((p) => `<tr data-open="${p.contentId}" data-focuspub="${p.id}" tabindex="0">
+          <td class="t-title">${esc(contentById(p.contentId)?.title || "Sans titre")}</td>
+          <td><span class="net-chip" style="--net:${NETWORKS[p.network].color}">${NETWORKS[p.network].label}</span></td>
+          <td>${fmtDate(p.date)}</td>
+          ${STAT_FIELDS.map(([k]) => `<td class="num">${p.stats?.[k] ? fmt(p.stats[k]) : "–"}</td>`).join("")}
+          <td><span class="mini-bar"><span style="width:${(eng(p) / maxEng) * 100}%"></span></span><span class="num">${fmt(eng(p))}</span></td>
+        </tr>`).join("")}</tbody>
+      </table></div>` : `<p class="empty">Le classement apparaîtra dès que des stats seront relevées.</p>`}
+      <p class="muted small">Les compteurs se saisissent à la main depuis chaque publication (Instagram, LinkedIn et Facebook ne permettent pas de les lire sans application connectée).</p>
+    </section>`;
+}
+
+/* ---------- Vue Trophées ---------- */
+
+function renderTrophees() {
+  const xp = computeXP(state);
+  const lvl = levelFor(xp);
+  const bs = badges(state);
+  const won = bs.filter((b) => b.unlocked).length;
+  const weeks = [];
+  for (let i = 7; i >= 0; i--) {
+    const ws = addDays(weekStart(today()), -7 * i);
+    weeks.push({ ws, quests: questsForWeek(state, ws) });
+  }
+  $("#panel").innerHTML = `
+    <div class="panel-head">
+      <div><p class="eyebrow">Trophées</p><h1>Ton ascension</h1></div>
+      <div class="panel-tools"><span class="muted">${won}/${bs.length} trophées</span></div>
+    </div>
+
+    <section class="card">
+      <h2 class="h-card">Les paliers</h2>
+      <ol class="levels">
+        ${LEVELS.map(([alt, name], i) => `<li class="${i < lvl.index ? "is-past" : i === lvl.index ? "is-current" : ""}">
+          <span class="lv-alt">${fmt(alt)} m</span><span class="lv-name">${name}</span>${i === lvl.index ? `<span class="lv-you">Tu es ici</span>` : ""}
+        </li>`).join("")}
+      </ol>
+      <p class="muted small">Barème : idée +${XP.content.idee} · en rédaction ${XP.content.redaction} · prêt ${XP.content.pret} · publication programmée +${XP.pubPlanned} · publiée +${XP.pubPublished} · stats relevées +${XP.stats} · défi hebdo réussi +${XP.quest}.</p>
+    </section>
+
+    <section class="card">
+      <h2 class="h-card">Trophées</h2>
+      <ul class="badges">
+        ${bs.map((b) => `<li class="badge ${b.unlocked ? "is-on" : ""}">
+          <span class="badge-icon" aria-hidden="true">${b.icon}</span>
+          <span class="badge-name">${b.name}${b.unlocked ? "" : ` <span class="sr">(verrouillé)</span>`}</span>
+          <span class="badge-desc">${b.desc}</span>
+          ${b.unlocked ? `<span class="badge-ok">Débloqué</span>` : `<span class="bar bar-sm"><span style="width:${Math.min(100, (b.value / b.goal) * 100)}%"></span></span><span class="badge-prog">${fmt(Math.min(b.value, b.goal))} / ${fmt(b.goal)}</span>`}
+        </li>`).join("")}
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2 class="h-card">Défis des 8 dernières semaines</h2>
+      <div class="table-wrap"><table class="table weeks">
+        <thead><tr><th scope="col">Semaine du</th>${weeks[0].quests.map((q) => `<th scope="col">${esc(q.label)}</th>`).join("")}</tr></thead>
+        <tbody>${weeks.reverse().map((w) => `<tr><td>${fmtDate(w.ws)}</td>${w.quests.map((q) => `<td class="${q.done ? "w-ok" : ""}">${q.done ? "✓ " : ""}${Math.min(q.value, q.goal)}/${q.goal}</td>`).join("")}</tr>`).join("")}</tbody>
+      </table></div>
+    </section>`;
+}
+
+/* ---------- Routage des vues ---------- */
+
+let view = "sentier";
+function setView(v) {
+  view = v;
+  document.body.dataset.screen = v;
+  $$(".tabs button").forEach((b) => (b.getAttribute("data-view") === v ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
+  renderPanel();
+  if (v !== "sentier") $("#panel").focus({ preventScroll: true });
+  try { localStorage.setItem(STORE_KEY + ":view", v); } catch (e) { /* rien */ }
+}
+function renderPanel() {
+  if (view === "planning") renderPlanning();
+  else if (view === "contenus") renderContenus();
+  else if (view === "stats") renderStats();
+  else if (view === "trophees") renderTrophees();
+  else $("#panel").innerHTML = "";
+}
+function renderAll() {
+  renderHud();
+  renderSide();
+  renderPanel();
+  renderScene();
+}
+
+/* ---------- Éditeur de contenu ---------- */
+
+const editor = $("#editor");
+let draft = null;
+
+function pubRowHTML(p, i) {
+  const net = NETWORKS[p.network];
+  const statsOpen = p.status === "publie";
+  return `<fieldset class="pub-row ${p.status === "publie" ? "is-done" : ""}" data-i="${i}" id="pubrow-${p.id}" style="--net:${net.color}">
+    <legend><span class="net-chip" style="--net:${net.color}">${net.label}</span></legend>
+    <div class="pub-grid">
+      <label>Date<input class="input" type="date" name="date" value="${esc(p.date)}"></label>
+      <label>Heure<input class="input" type="time" name="time" value="${esc(p.time)}"></label>
+      <label>Statut
+        <select class="input" name="status">
+          <option value="prevu" ${p.status === "prevu" ? "selected" : ""}>Prévu</option>
+          <option value="publie" ${p.status === "publie" ? "selected" : ""}>Publié</option>
+        </select>
+      </label>
+      <label class="span-2">Lien<input class="input" type="url" name="url" value="${esc(p.url)}" placeholder="https://…"></label>
+    </div>
+    ${p.status === "prevu" ? `<button type="button" class="btn btn-primary btn-sm" data-publish="${i}">Marquer publié <span class="xp-pill">+${XP.pubPublished - XP.pubPlanned}</span></button>` : ""}
+    <details class="pub-stats" ${statsOpen ? "open" : ""}>
+      <summary>Statistiques ${hasStats(p) ? `<span class="muted">relevées le ${fmtDate(p.statsAt)}</span>` : `<span class="xp-pill">+${XP.stats}</span>`}</summary>
+      <div class="stats-inputs">
+        ${STAT_FIELDS.map(([k, l]) => `<label>${l}<input class="input" type="number" min="0" step="1" inputmode="numeric" name="stat-${k}" value="${p.stats?.[k] ?? ""}"></label>`).join("")}
+      </div>
+    </details>
+    <button type="button" class="link danger small" data-delpub="${i}">Retirer cette publication</button>
+  </fieldset>`;
+}
+
+function renderEditor() {
+  const c = draft.content;
+  const limits = SOCIALS.filter((n) => draft.pubs.some((p) => p.network === n));
+  editor.innerHTML = `
+    <form method="dialog" class="editor-form" id="editor-form">
+      <header class="editor-head">
+        <p class="eyebrow">${draft.isNew ? "Nouveau contenu" : "Contenu"}</p>
+        <button type="button" class="btn btn-ghost btn-icon" data-close aria-label="Fermer">×</button>
+      </header>
+      <label class="field-title"><span class="sr">Titre</span>
+        <input class="input input-title" name="title" id="editor-title" value="${esc(c.title)}" placeholder="Titre ou accroche" required>
+      </label>
+      <div class="editor-meta">
+        <label>Format<select class="input" name="kind">${Object.entries(KINDS).map(([k, l]) => `<option value="${k}" ${c.kind === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+        <label>Pilier<select class="input" name="pillar"><option value="">—</option>${Object.entries(PILLARS).map(([k, l]) => `<option value="${k}" ${c.pillar === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+        <label>Étape<select class="input" name="cstatus">${Object.entries(STATUSES).map(([k, l]) => `<option value="${k}" ${c.status === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+      </div>
+      <label>Texte du post / brouillon
+        <textarea class="input" name="text" rows="6" placeholder="Écris ici le texte à publier…">${esc(c.text)}</textarea>
+        <span class="char-count" id="char-count"></span>
+      </label>
+      <label>Notes (sources, angle, visuels…)
+        <textarea class="input" name="notes" rows="3">${esc(c.notes)}</textarea>
+      </label>
+
+      <div class="editor-pubs">
+        <div class="card-head"><p class="eyebrow">Où et quand publier</p></div>
+        <div class="add-pubs">
+          ${NETWORK_ORDER.map((n) => `<button type="button" class="btn btn-ghost btn-sm add-net" data-addnet="${n}" style="--net:${NETWORKS[n].color}">+ ${NETWORKS[n].label}</button>`).join("")}
+          <button type="button" class="btn btn-ghost btn-sm" data-add3>+ Les 3 réseaux</button>
+        </div>
+        <div id="pub-rows">${draft.pubs.map(pubRowHTML).join("") || `<p class="empty">Pas encore de publication prévue. Ajoute un réseau (+${XP.pubPlanned} m chacune).</p>`}</div>
+      </div>
+
+      <footer class="editor-foot">
+        ${draft.isNew ? "" : `<button type="button" class="link danger" data-delete>Supprimer</button>`}
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-ghost" data-close>Annuler</button>
+        <button type="submit" class="btn btn-primary" value="save">Enregistrer</button>
+      </footer>
+    </form>`;
+  updateCharCount(limits);
+}
+
+function updateCharCount(limits) {
+  const ta = editor.querySelector('textarea[name="text"]');
+  const out = $("#char-count");
+  if (!ta || !out) return;
+  const n = ta.value.length;
+  const nets = limits || SOCIALS.filter((k) => draft.pubs.some((p) => p.network === k));
+  out.innerHTML = `${fmt(n)} caractères${nets.map((k) => ` · <span class="${n > CHAR_LIMITS[k] ? "is-over" : ""}">${NETWORKS[k].label} ${fmt(CHAR_LIMITS[k])}</span>`).join("")}`;
+}
+
+function readEditorForm() {
+  const f = $("#editor-form");
+  if (!f) return;
+  const c = draft.content;
+  const val = (name) => f.elements.namedItem(name).value;
+  c.title = val("title").trim();
+  c.kind = val("kind");
+  c.pillar = val("pillar");
+  c.status = val("cstatus");
+  c.text = val("text");
+  c.notes = val("notes");
+  $$(".pub-row", f).forEach((row) => {
+    const p = draft.pubs[Number(row.dataset.i)];
+    p.date = row.querySelector('[name="date"]').value;
+    p.time = row.querySelector('[name="time"]').value;
+    p.status = row.querySelector('[name="status"]').value;
+    p.url = row.querySelector('[name="url"]').value.trim();
+    STAT_FIELDS.forEach(([k]) => {
+      const v = row.querySelector(`[name="stat-${k}"]`).value;
+      if (v === "") delete p.stats[k];
+      else p.stats[k] = Math.max(0, Number(v) || 0);
+    });
+  });
+}
+
+function newPub(network, date = "") {
+  return { id: uid("p"), contentId: draft.content.id, network, date, time: "", status: "prevu", url: "", stats: {}, statsAt: null, plannedAt: today() };
+}
+
+function openEditor(contentId, { date = "", focusPub = null } = {}) {
+  const existing = contentId ? contentById(contentId) : null;
+  if (contentId && !existing) return;
+  const content = existing ? structuredClone(existing) : { id: uid("c"), title: "", kind: "post", pillar: "", status: "idee", slug: "", notes: "", text: "", createdAt: today() };
+  draft = {
+    isNew: !existing,
+    content,
+    pubs: existing ? structuredClone(pubsOf(existing.id)) : [],
+    original: existing ? structuredClone(pubsOf(existing.id)) : [],
+  };
+  if (date) draft.pubs.push(newPub(content.kind === "article" ? "site" : "linkedin", date));
+  renderEditor();
+  tooltip.hidden = true;
+  editor.showModal();
+  if (focusPub) {
+    const row = $(`#pubrow-${focusPub}`);
+    if (row) {
+      row.querySelector("details")?.setAttribute("open", "");
+      row.scrollIntoView({ block: "center" });
+      row.querySelector('[name="stat-impressions"]')?.focus();
+    }
+  } else if (!existing) {
+    $("#editor-title").focus();
+  }
+  if (scene && existing) scene.focus(existing.id);
+}
+
+function commitEditor() {
+  readEditorForm();
+  const c = draft.content;
+  if (!c.title) {
+    $("#editor-title").focus();
+    return false;
+  }
+  const t = today();
+  const before = new Map(draft.original.map((p) => [p.id, p]));
+  let newlyPublished = false;
+  draft.pubs.forEach((p) => {
+    const old = before.get(p.id);
+    const statsChanged = !old || JSON.stringify(old.stats || {}) !== JSON.stringify(p.stats || {});
+    if (statsChanged && Object.values(p.stats).some((v) => v > 0)) p.statsAt = t;
+    if (!Object.values(p.stats).some((v) => v > 0)) p.statsAt = null;
+    if (p.status === "publie" && (!old || old.status !== "publie")) {
+      newlyPublished = true;
+      if (!p.date) p.date = t;
+    }
+  });
+  if (draft.pubs.some((p) => p.status === "publie")) c.status = "publie";
+
+  const idx = state.contents.findIndex((x) => x.id === c.id);
+  if (idx >= 0) state.contents[idx] = c;
+  else state.contents.push(c);
+  state.pubs = state.pubs.filter((p) => p.contentId !== c.id).concat(draft.pubs);
+  editor.close();
+  draft = null;
+  afterChange({ celebrateId: newlyPublished ? c.id : null });
+  return true;
+}
+
+editor.addEventListener("click", (e) => {
+  const tgt = e.target.closest("button, [data-close]");
+  if (e.target === editor) { editor.close(); return; }
+  if (!tgt || !draft) return;
+  if (tgt.hasAttribute("data-close")) { editor.close(); return; }
+  const add = (n) => {
+    readEditorForm();
+    const d = draft.pubs.find((p) => p.date)?.date || "";
+    draft.pubs.push(newPub(n, d));
+    renderEditor();
+  };
+  if (tgt.dataset.addnet) add(tgt.dataset.addnet);
+  else if (tgt.hasAttribute("data-add3")) {
+    readEditorForm();
+    const d = draft.pubs.find((p) => p.date)?.date || "";
+    SOCIALS.forEach((n) => { if (!draft.pubs.some((p) => p.network === n)) draft.pubs.push(newPub(n, d)); });
+    renderEditor();
+  } else if (tgt.dataset.delpub != null) {
+    readEditorForm();
+    draft.pubs.splice(Number(tgt.dataset.delpub), 1);
+    renderEditor();
+  } else if (tgt.dataset.publish != null) {
+    readEditorForm();
+    const p = draft.pubs[Number(tgt.dataset.publish)];
+    p.status = "publie";
+    if (!p.date || p.date > today()) p.date = today();
+    renderEditor();
+  } else if (tgt.hasAttribute("data-delete")) {
+    if (confirm(`Supprimer « ${draft.content.title || "ce contenu"} » et ses publications ?`)) {
+      state.contents = state.contents.filter((x) => x.id !== draft.content.id);
+      state.pubs = state.pubs.filter((p) => p.contentId !== draft.content.id);
+      editor.close();
+      draft = null;
+      afterChange();
+    }
+  }
+});
+editor.addEventListener("submit", (e) => {
+  e.preventDefault();
+  commitEditor();
+});
+editor.addEventListener("input", (e) => {
+  if (e.target.name === "text") updateCharCount();
+});
+editor.addEventListener("close", () => {
+  draft = null;
+});
+
+/* ---------- Niveau supérieur ---------- */
+
+function showLevelUp(lvl) {
+  const d = $("#levelup");
+  d.innerHTML = `<div class="levelup-inner">
+    <p class="eyebrow">Nouveau palier</p>
+    <p class="levelup-alt">${fmt(lvl.from)} m</p>
+    <h2>${lvl.name}</h2>
+    <p>${lvl.next ? `Prochain palier : ${lvl.nextName}, à ${fmt(lvl.next)} m.` : "Plus haut, il n'y a que le ciel."}</p>
+    <form method="dialog"><button class="btn btn-primary">On continue</button></form>
+  </div>`;
+  d.showModal();
+}
+
+/* ---------- Notifications ---------- */
+
+function toast(text, kind = "") {
+  const el = document.createElement("div");
+  el.className = `toast toast-${kind}`;
+  el.textContent = text;
+  $("#toasts").appendChild(el);
+  setTimeout(() => el.classList.add("is-out"), 2600);
+  setTimeout(() => el.remove(), 3200);
+}
+
+/* ---------- Événements globaux ---------- */
+
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-view], [data-open], [data-goto], [data-mission], [data-cal], [data-addday], [data-advance], [data-statnet], [data-statperiod], [data-cam]");
+  if (!b || editor.contains(b)) return;
+  if (b.closest(".tabs") && b.dataset.view) return setView(b.dataset.view);
+  if (b.dataset.goto) return setView(b.dataset.goto);
+  if (b.dataset.mission !== undefined) return b.dataset.mission ? openEditor(b.dataset.mission) : openEditor(null);
+  if (b.dataset.cal !== undefined) {
+    const dir = Number(b.dataset.cal);
+    if (!dir) calMonth = today().slice(0, 7);
+    else {
+      const [y, m] = calMonth.split("-").map(Number);
+      calMonth = ymd(new Date(y, m - 1 + dir, 1)).slice(0, 7);
+    }
+    return renderPlanning();
+  }
+  if (b.dataset.addday) return openEditor(null, { date: b.dataset.addday });
+  if (b.dataset.advance) {
+    const c = contentById(b.dataset.advance);
+    const next = { idee: "redaction", redaction: "pret" }[c?.status];
+    if (next) { c.status = next; afterChange(); }
+    return;
+  }
+  if (b.dataset.statnet) { statsNet = b.dataset.statnet; return renderStats(); }
+  if (b.dataset.statperiod) { statsPeriod = b.dataset.statperiod; return renderStats(); }
+  if (b.dataset.cam && scene) return b.dataset.cam === "runner" ? scene.focusRunner() : scene.overview();
+  if (b.dataset.open) return openEditor(b.dataset.open, { focusPub: b.dataset.focuspub || null });
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && e.target.matches("tr[data-open]")) openEditor(e.target.dataset.open, { focusPub: e.target.dataset.focuspub });
+});
+
+document.addEventListener("submit", (e) => {
+  const f = e.target.closest("[data-quick]");
+  if (!f) return;
+  e.preventDefault();
+  const title = f.elements.namedItem("title").value.trim();
+  if (!title) return;
+  state.contents.push({ id: uid("c"), title, kind: "post", pillar: "", status: "idee", slug: "", notes: "", text: "", createdAt: today() });
+  afterChange();
+  $(".quick-idea input")?.focus();
+});
+
+document.addEventListener("input", (e) => {
+  if (e.target.id === "content-search") {
+    contentFilter = e.target.value;
+    const pos = e.target.selectionStart;
+    renderContenus();
+    const inp = $("#content-search");
+    inp.focus();
+    inp.setSelectionRange(pos, pos);
+  }
+});
+
+/* Glisser-déposer : planning (publications et contenus) et colonnes du tableau */
+document.addEventListener("dragstart", (e) => {
+  const pub = e.target.closest("[data-pub]");
+  const content = e.target.closest("[data-content]");
+  if (pub) e.dataTransfer.setData("text/x-pub", pub.dataset.pub);
+  else if (content) e.dataTransfer.setData("text/x-content", content.dataset.content);
+  else return;
+  e.dataTransfer.effectAllowed = "move";
+  e.target.classList.add("is-dragging");
+});
+document.addEventListener("dragend", (e) => e.target.classList?.remove("is-dragging"));
+document.addEventListener("dragover", (e) => {
+  const zone = e.target.closest("[data-day], [data-col]");
+  if (!zone) return;
+  e.preventDefault();
+  $$(".is-drop").forEach((z) => z !== zone && z.classList.remove("is-drop"));
+  zone.classList.add("is-drop");
+});
+document.addEventListener("dragleave", (e) => {
+  const zone = e.target.closest("[data-day], [data-col]");
+  if (zone && !zone.contains(e.relatedTarget)) zone.classList.remove("is-drop");
+});
+document.addEventListener("drop", (e) => {
+  const zone = e.target.closest("[data-day], [data-col]");
+  if (!zone) return;
+  e.preventDefault();
+  zone.classList.remove("is-drop");
+  const pubId = e.dataTransfer.getData("text/x-pub");
+  const contentId = e.dataTransfer.getData("text/x-content");
+  if (zone.dataset.day) {
+    const day = zone.dataset.day;
+    if (pubId) {
+      const p = state.pubs.find((x) => x.id === pubId);
+      if (p && p.date !== day) { p.date = day; if (p.status === "prevu") p.plannedAt = today(); afterChange(); }
+    } else if (contentId) {
+      const c = contentById(contentId);
+      if (!c) return;
+      openEditor(c.id, { date: day });
+    }
+  } else if (zone.dataset.col && contentId) {
+    const c = contentById(contentId);
+    if (c && c.status !== zone.dataset.col) { c.status = zone.dataset.col; afterChange(); }
+  }
+});
+
+/* Menu : sauvegarde / réglages */
+const menu = $("#menu");
+$("#btn-menu").addEventListener("click", () => {
+  menu.hidden = !menu.hidden;
+  $("#btn-menu").setAttribute("aria-expanded", String(!menu.hidden));
+});
+document.addEventListener("click", (e) => {
+  if (!menu.hidden && !e.target.closest(".hud-actions")) {
+    menu.hidden = true;
+    $("#btn-menu").setAttribute("aria-expanded", "false");
+  }
+});
+menu.addEventListener("click", (e) => {
+  const a = e.target.closest("[data-action]")?.dataset.action;
+  if (a === "export") {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `camp-de-base-${today()}.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  } else if (a === "reset") {
+    if (confirm("Effacer toutes tes modifications et repartir des données de départ ? Exporte d'abord une sauvegarde si besoin.")) {
+      state = seedState();
+      state.seenBadges = badges(state).filter((b) => b.unlocked).map((b) => b.id);
+      lastXP = computeXP(state);
+      lastLevel = levelFor(lastXP).index;
+      save();
+      renderAll();
+    }
+  }
+});
+$("#import-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (!Array.isArray(data.contents) || !Array.isArray(data.pubs)) throw new Error("format");
+    data.settings = { weeklyGoal: 2, ...(data.settings || {}) };
+    state = data;
+    if (!Array.isArray(state.seenBadges)) state.seenBadges = badges(state).filter((b) => b.unlocked).map((b) => b.id);
+    lastXP = computeXP(state);
+    lastLevel = levelFor(lastXP).index;
+    save();
+    renderAll();
+    toast("Sauvegarde importée.");
+  } catch (err) {
+    toast("Ce fichier n'est pas une sauvegarde du camp de base.", "warn");
+  }
+  e.target.value = "";
+});
+$("#goal-input").addEventListener("change", (e) => {
+  state.settings.weeklyGoal = Math.max(1, Math.min(14, Number(e.target.value) || 2));
+  afterChange();
+});
+$("#btn-new").addEventListener("click", () => openEditor(null));
+
+/* ---------- Démarrage ---------- */
+
+let startView = "sentier";
+try { startView = localStorage.getItem(STORE_KEY + ":view") || "sentier"; } catch (e) { /* rien */ }
+save();
+setView(["sentier", "planning", "contenus", "stats", "trophees"].includes(startView) ? startView : "sentier");
+renderHud();
+renderSide();
+initScene();

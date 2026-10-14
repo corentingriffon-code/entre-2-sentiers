@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /camp-de-base/
 Content-Signal: search=yes, ai-train=yes, ai-input=yes
 
 Sitemap: https://entre2sentiers.com/sitemap.xml
