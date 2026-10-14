@@ -127,11 +127,11 @@ export async function syncAll(state, today) {
   const [site, ig] = await Promise.all([fetchJSON("/api/camp/site"), fetchJSON("/api/camp/instagram")]);
   const report = { at: new Date().toISOString(), site: {}, instagram: {} };
 
-  if (!site.configured) report.site = { status: "off" };
+  if (!site.configured) report.site = { status: "off", missing: site.missing || [] };
   else if (site.error) report.site = { status: "error", message: site.error };
   else report.site = { status: "ok", weeks: applySite(state, site, today) };
 
-  if (!ig.configured) report.instagram = { status: "off" };
+  if (!ig.configured) report.instagram = { status: "off", missing: ig.missing || [] };
   else if (ig.error) report.instagram = { status: "error", message: ig.error };
   else report.instagram = { status: "ok", username: ig.username, ...applyInstagram(state, ig, today) };
 

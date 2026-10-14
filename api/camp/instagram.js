@@ -8,8 +8,9 @@ const BASE = "https://graph.instagram.com";
 
 module.exports = async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  const token = process.env.IG_ACCESS_TOKEN;
-  if (!token) return res.status(200).json({ configured: false });
+  const key = Object.keys(process.env).find((x) => x.toUpperCase() === "IG_ACCESS_TOKEN");
+  const token = (key ? process.env[key] : "").trim().replace(/^["']|["']$/g, "");
+  if (!token) return res.status(200).json({ configured: false, missing: ["IG_ACCESS_TOKEN"] });
 
   const get = async (path, params = {}) => {
     const url = new URL(BASE + path);
