@@ -69,6 +69,8 @@ export function levelFor(xp) {
   };
 }
 
+/* Les données importées automatiquement (Instagram, Google Analytics) ne rapportent pas de D+ */
+const manualStats = (p) => hasStats(p) && p.statsSource !== "auto";
 export const hasStats = (p) => !!p.statsAt && Object.values(p.stats || {}).some((v) => Number(v) > 0);
 
 /* ---------- Défis de la semaine ---------- */
@@ -79,7 +81,7 @@ export function questsForWeek(state, ws) {
   const nextWs = addDays(ws, 7);
   const articles = pubs.filter((p) => p.network === "site" && p.status === "publie" && inWeek(p.date, ws)).length;
   const nets = new Set(pubs.filter((p) => SOCIALS.includes(p.network) && p.status === "publie" && inWeek(p.date, ws)).map((p) => p.network));
-  const statsCount = pubs.filter((p) => hasStats(p) && inWeek(p.statsAt, ws)).length;
+  const statsCount = pubs.filter((p) => manualStats(p) && inWeek(p.statsAt, ws)).length;
   const planned = pubs.filter((p) => inWeek(p.date, nextWs) && inWeek(p.plannedAt, ws)).length;
   return [
     { id: "articles", label: `Publier ${goal} articles sur le site`, value: articles, goal },
@@ -118,16 +120,16 @@ export function streak(state) {
 
 export function computeXP(state) {
   let xp = 0;
-  state.contents.forEach((c) => (xp += XP.content[c.status] || 0));
+  state.contents.forEach((c) => (xp += c.imported ? 0 : XP.content[c.status] || 0));
   state.pubs.forEach((p) => {
-    xp += p.status === "publie" ? XP.pubPublished : XP.pubPlanned;
-    if (hasStats(p)) xp += XP.stats;
+    if (!p.imported) xp += p.status === "publie" ? XP.pubPublished : XP.pubPlanned;
+    if (manualStats(p)) xp += XP.stats;
   });
   let quests = 0;
   allWeeks(state).forEach((ws) => questsForWeek(state, ws).forEach((q) => q.done && quests++));
   xp += quests * XP.quest;
-  xp += (state.siteStats || []).length * XP.siteReport;
-  xp += (state.audience || []).length * XP.audienceReport;
+  xp += (state.siteStats || []).filter((x) => x.source !== "auto").length * XP.siteReport;
+  xp += (state.audience || []).filter((x) => x.source !== "auto").length * XP.audienceReport;
   xp += (state.tasks || []).filter((t) => t.done).length * XP.task;
   return xp;
 }
@@ -197,7 +199,7 @@ export function nextMission(state) {
   if (now.length) return { text: `Aujourd'hui : publier « ${title(now[0])} » sur ${NETWORKS[now[0].network].label}`, contentId: now[0].contentId, xp: XP.pubPublished - XP.pubPlanned };
 
   const noStats = state.pubs
-    .filter((p) => p.status === "publie" && p.network !== "site" && !hasStats(p) && p.date && p.date <= addDays(t, -2))
+    .filter((p) => p.status === "publie" && (p.network === "linkedin" || p.network === "facebook") && !hasStats(p) && p.date && p.date <= addDays(t, -2))
     .sort((a, b) => b.date.localeCompare(a.date));
   if (noStats.length) return { text: `Relever les stats de « ${title(noStats[0])} » (${NETWORKS[noStats[0].network].label})`, contentId: noStats[0].contentId, xp: XP.stats };
 

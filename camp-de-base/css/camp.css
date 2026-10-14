@@ -669,3 +669,15 @@ body:not([data-screen="sentier"]) .keys-hint { display: none; }
 @media (max-width: 720px) {
   .panel-close { top: calc(var(--hud-h) + 24px); right: 16px; width: 38px; height: 38px; }
 }
+
+/* Barre de connexion (Google Analytics, Instagram) */
+.sync-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.55); border: 1px dashed var(--line); }
+.sync-bar [data-sync] { margin-left: auto; }
+.sync-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #fff; border: 1px solid var(--line); }
+.sync-chip.sync-ok { border-color: var(--lime-deep); }
+.sync-chip.sync-ok::after { content: "✓"; color: var(--lime-deep); font-weight: 700; }
+.sync-chip.sync-off { color: var(--muted); }
+.sync-chip.sync-off .net-dot { opacity: 0.4; }
+.sync-chip.sync-error { border-color: var(--late); color: var(--late); }
+.sync-error { flex-basis: 100%; font-size: 0.78rem; color: var(--late); }
+.auto-tag { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 1px 5px; border-radius: 4px; background: var(--sage); color: var(--dark); }

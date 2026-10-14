@@ -9,6 +9,7 @@ import {
   XP, LEVELS, levelFor, computeXP, questsForWeek, streak, badges, nextMission, hasStats,
   today, addDays, weekStart, parseDate, ymd,
 } from "./game.js";
+import { syncAll } from "./sync.js";
 
 const STORE_KEY = "e2s-camp-de-base-v1";
 const $ = (s, root = document) => root.querySelector(s);
@@ -409,8 +410,57 @@ function statsHeader(title) {
           ${[["30", "30 j"], ["90", "90 j"], ["all", "Tout"]].map(([v, l]) => `<button type="button" data-statperiod="${v}" aria-pressed="${statsPeriod === v}">${l}</button>`).join("")}
         </div>
       </div>
-    </div>`;
+    </div>
+    ${syncBar()}`;
 }
+
+/* ---------- Connexions : Google Analytics et Instagram ---------- */
+
+let syncing = false;
+function ago(iso) {
+  if (!iso) return "jamais";
+  const min = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (min < 1) return "à l'instant";
+  if (min < 60) return `il y a ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `il y a ${h} h`;
+  return `il y a ${Math.round(h / 24)} j`;
+}
+function syncBar() {
+  const r = state.settings.sync || {};
+  const chip = (label, x, color) => {
+    const st = x?.status;
+    const text = st === "ok" ? "connecté" : st === "error" ? "erreur" : "non connecté";
+    return `<span class="sync-chip sync-${st || "off"}" style="--net:${color}" title="${esc(x?.message || "")}"><i class="net-dot"></i>${label} · ${text}</span>`;
+  };
+  const errors = [r.site, r.instagram].filter((x) => x?.status === "error").map((x) => x.message);
+  return `<div class="sync-bar">
+    ${chip("Site (Google Analytics)", r.site, NETWORKS.site.color)}
+    ${chip("Instagram", r.instagram, NETWORKS.instagram.color)}
+    <span class="muted small">LinkedIn et Facebook : saisie à la main · dernière synchro ${ago(r.at)}</span>
+    <button type="button" class="btn btn-ghost btn-sm" data-sync ${syncing ? "disabled" : ""}>${syncing ? "Synchro…" : "↻ Synchroniser"}</button>
+    ${errors.map((m) => `<p class="sync-error">${esc(m)}</p>`).join("")}
+  </div>`;
+}
+async function runSync({ quiet = false } = {}) {
+  if (syncing) return;
+  syncing = true;
+  if (view === "stats") renderStats();
+  try {
+    const r = await syncAll(state, today());
+    const parts = [];
+    if (r.site.status === "ok") parts.push("site à jour");
+    if (r.instagram.status === "ok") parts.push(`Instagram à jour${r.instagram.created ? ` (${r.instagram.created} publication${r.instagram.created > 1 ? "s" : ""} ajoutée${r.instagram.created > 1 ? "s" : ""})` : ""}`);
+    if (!quiet) toast(parts.length ? `Synchro : ${parts.join(", ")}` : "Aucune connexion configurée pour l'instant", parts.length ? "" : "muted");
+    else if (r.instagram.created) toast(`${r.instagram.created} publication(s) Instagram ajoutée(s)`);
+  } finally {
+    syncing = false;
+    afterChange();
+  }
+}
+document.addEventListener("click", (e) => {
+  if (e.target.closest("[data-sync]")) runSync();
+});
 
 function renderStats() {
   if (statsNet === "site") return renderSiteStats();
@@ -424,7 +474,8 @@ function renderStats() {
   const imp = sum(withStats, "impressions");
   const engTotal = withStats.reduce((s, p) => s + eng(p), 0);
   const rate = imp ? (engTotal / imp) * 100 : 0;
-  const missing = state.pubs.filter((p) => p.status === "publie" && p.network !== "site" && !hasStats(p)).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const igAuto = state.settings.sync?.instagram?.status === "ok";
+  const missing = state.pubs.filter((p) => p.status === "publie" && p.network !== "site" && !(igAuto && p.network === "instagram") && !hasStats(p)).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
   const byNet = NETWORK_ORDER.map((n) => {
     const ps = withStats.filter((p) => p.network === n);
@@ -560,9 +611,13 @@ function pubTable(pubs, fields) {
 
 function renderSiteStats() {
   const r = siteReports();
-  const last = r[r.length - 1];
-  const prev = r[r.length - 2];
-  const recent = r.slice(-4);
+  // La semaine en cours n'est pas finie : les tuiles comparent les semaines complètes
+  const thisWeek = weekStart(today());
+  const done = r.filter((x) => x.week < thisWeek);
+  const last = done[done.length - 1];
+  const prev = done[done.length - 2];
+  const recent = done.slice(-4);
+  const gaOk = state.settings.sync?.site?.status === "ok";
   const avg = recent.length ? recent.reduce((s, x) => s + x.visitors, 0) / recent.length : 0;
   const articles = state.pubs
     .filter((p) => p.network === "site" && p.status === "publie" && inPeriod(p.date))
@@ -583,7 +638,7 @@ function renderSiteStats() {
     <div class="stats-grid">
       <section class="card">
         <div class="card-head"><h2 class="h-card">Visiteurs par semaine</h2><span class="muted">${r.length} relevé${r.length > 1 ? "s" : ""}</span></div>
-        ${r.length ? vbars(r.slice(-12).map((x) => ({ label: fmtDate(x.week), value: x.visitors, title: `Semaine du ${fmtDate(x.week)}` })), color, "visiteurs") : `<p class="empty">Ajoute ton premier relevé pour voir la courbe se dessiner.</p>`}
+        ${r.length ? vbars(r.slice(-12).map((x) => ({ label: x.week === thisWeek ? "en cours" : fmtDate(x.week), value: x.visitors, title: `Semaine du ${fmtDate(x.week)}${x.week === thisWeek ? " (en cours)" : ""}` })), color, "visiteurs") : `<p class="empty">Ajoute ton premier relevé pour voir la courbe se dessiner.</p>`}
       </section>
       <section class="card">
         <div class="card-head"><h2 class="h-card">Relevé de fréquentation</h2><span class="xp-pill">+${XP.siteReport} m</span></div>
@@ -593,9 +648,10 @@ function renderSiteStats() {
           <label>Pages vues<input class="input" type="number" name="pageviews" min="0" step="1" inputmode="numeric"></label>
           <button class="btn btn-primary btn-sm" type="submit">Enregistrer</button>
         </form>
-        <p class="muted small">Les chiffres se lisent dans Google Analytics (le site y est relié via Google Tag Manager) : <em>Rapports → Engagement → Pages et écrans</em>, sur la semaine choisie. Les vues de chaque article se reportent dans sa fiche (ligne « Site »).</p>
+        ${gaOk ? `<p class="small"><strong>Synchronisé avec Google Analytics</strong> : les semaines et les vues d'articles se mettent à jour toutes seules. Un relevé saisi à la main reste prioritaire.</p>` : ""}
+        <p class="muted small" ${gaOk ? "hidden" : ""}>Les chiffres se lisent dans Google Analytics (le site y est relié via Google Tag Manager) : <em>Rapports → Engagement → Pages et écrans</em>, sur la semaine choisie. Les vues de chaque article se reportent dans sa fiche (ligne « Site »).</p>
         <p><a class="link" href="https://analytics.google.com/" target="_blank" rel="noopener">Ouvrir Google Analytics ↗</a></p>
-        ${r.length ? `<details class="history"><summary>Historique des relevés</summary><ul>${[...r].reverse().map((x) => `<li><span>Semaine du ${fmtDate(x.week)}</span><span>${fmt(x.visitors)} visiteurs · ${fmt(x.pageviews || 0)} pages vues</span><button type="button" class="link danger small" data-site-del="${x.id}">Supprimer</button></li>`).join("")}</ul></details>` : ""}
+        ${r.length ? `<details class="history"><summary>Historique des relevés</summary><ul>${[...r].reverse().map((x) => `<li><span>Semaine du ${fmtDate(x.week)}${x.source === "auto" ? ` <span class="auto-tag">auto</span>` : ""}</span><span>${fmt(x.visitors)} visiteurs · ${fmt(x.pageviews || 0)} pages vues</span><button type="button" class="link danger small" data-site-del="${x.id}">Supprimer</button></li>`).join("")}</ul></details>` : ""}
       </section>
     </div>
 
@@ -640,7 +696,7 @@ function renderNetworkStats(n) {
           <button class="btn btn-primary btn-sm" type="submit">Enregistrer</button>
         </form>
         ${best ? `<div class="best"><p class="eyebrow">Meilleure publication</p><button type="button" class="link" data-open="${best.contentId}" data-focuspub="${best.id}">${esc(contentById(best.contentId)?.title || "Sans titre")}</button><p class="muted small">${fmt(engOf(best))} interactions · ${fmt(Number(best.stats.impressions) || 0)} impressions · ${fmtDate(best.date)}</p></div>` : ""}
-        ${a.length ? `<details class="history"><summary>Historique des relevés</summary><ul>${[...a].reverse().map((x) => `<li><span>${fmtDate(x.date)}</span><span>${fmt(x.followers)} abonnés</span><button type="button" class="link danger small" data-aud-del="${x.id}">Supprimer</button></li>`).join("")}</ul></details>` : ""}
+        ${a.length ? `<details class="history"><summary>Historique des relevés</summary><ul>${[...a].reverse().map((x) => `<li><span>${fmtDate(x.date)}${x.source === "auto" ? ` <span class="auto-tag">auto</span>` : ""}</span><span>${fmt(x.followers)} abonnés</span><button type="button" class="link danger small" data-aud-del="${x.id}">Supprimer</button></li>`).join("")}</ul></details>` : ""}
       </section>
     </div>
 
@@ -1308,3 +1364,7 @@ setView(startView, { push: false });
 renderHud();
 renderSide();
 initScene();
+
+// Synchro automatique au plus toutes les 6 heures
+const lastSync = state.settings.sync?.at;
+if (!lastSync || Date.now() - new Date(lastSync) > 6 * 3600 * 1000) setTimeout(() => runSync({ quiet: true }), 1500);
