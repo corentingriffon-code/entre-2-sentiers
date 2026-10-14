@@ -25,7 +25,7 @@ const slugOf = (path) => (path.match(/\/articles\/([^/?#.]+)/) || [])[1] || "";
 
 function applySite(state, data, today) {
   let n = 0;
-  data.weeks.forEach((w) => {
+  (data.weeks || []).forEach((w) => {
     const existing = state.siteStats.find((x) => x.week === w.week);
     if (existing) {
       // Un relevé saisi à la main reste prioritaire
@@ -38,7 +38,7 @@ function applySite(state, data, today) {
     n++;
   });
   const views = {};
-  data.pages.forEach((p) => {
+  (data.pages || []).forEach((p) => {
     if (p.path.startsWith("/en/")) return;
     const slug = slugOf(p.path);
     if (slug) views[slug] = (views[slug] || 0) + p.views;
@@ -71,7 +71,7 @@ function applyInstagram(state, data, today) {
   }
 
   let created = 0;
-  data.media.forEach((m) => {
+  (data.media || []).forEach((m) => {
     const date = day(m.timestamp);
     const stats = {
       impressions: m.views || m.reach || 0,
@@ -119,7 +119,7 @@ function applyInstagram(state, data, today) {
     pub.statsAt = today;
     pub.statsSource = "auto";
   });
-  return { media: data.media.length, created };
+  return { media: (data.media || []).length, created };
 }
 
 /* Lance la synchronisation ; renvoie un compte rendu par source */
