@@ -62,22 +62,36 @@ function isoWeekMonday(code) {
 /* Valeurs collées à la main : on enlève espaces, guillemets et virgule finale */
 const clean = (v) => (v || "").trim().replace(/,$/, "").replace(/^["']|["']$/g, "").trim();
 
+const VERSION = "2026-10-14b";
+
 function credentials() {
-  const json = clean(process.env.GA_SERVICE_ACCOUNT);
-  if (json) {
+  const raw = (process.env.GA_SERVICE_ACCOUNT || "").trim();
+  if (raw) {
+    let sa;
     try {
-      const sa = JSON.parse(json.startsWith("{") ? json : `{${json}}`);
-      return { email: sa.client_email, key: sa.private_key };
-    } catch (e) { /* on retombe sur les variables séparées */ }
+      sa = JSON.parse(raw.startsWith("{") ? raw : `{${raw}}`);
+    } catch (e) {
+      return { invalid: "GA_SERVICE_ACCOUNT n'est pas un JSON valide : recolle tout le contenu du fichier, de la première { à la dernière }." };
+    }
+    if (sa.type && sa.type !== "service_account") {
+      return { invalid: `Le fichier collé dans GA_SERVICE_ACCOUNT est de type « ${sa.type} » : il faut le fichier JSON d'un compte de service (clé créée dans Comptes de service → Clés).` };
+    }
+    return { email: (sa.client_email || "").trim(), key: sa.private_key, source: "GA_SERVICE_ACCOUNT" };
   }
-  return { email: clean(process.env.GA_CLIENT_EMAIL), key: clean(process.env.GA_PRIVATE_KEY).replace(/\\n/g, "\n") };
+  return {
+    email: clean(process.env.GA_CLIENT_EMAIL),
+    key: clean(process.env.GA_PRIVATE_KEY).replace(/\\n/g, "\n"),
+    source: "GA_CLIENT_EMAIL + GA_PRIVATE_KEY",
+  };
 }
 
 module.exports = async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   const property = clean(process.env.GA_PROPERTY_ID).replace(/^properties\//, "");
-  const { email, key } = credentials();
-  if (!property || !email || !key) return res.status(200).json({ configured: false });
+  const cred = credentials();
+  if (cred.invalid) return res.status(200).json({ configured: true, version: VERSION, error: cred.invalid });
+  const { email, key, source } = cred;
+  if (!property || !email || !key) return res.status(200).json({ configured: false, version: VERSION });
   try {
     const token = await googleToken(email, key);
     const [weeks, pages] = await Promise.all([
@@ -96,6 +110,7 @@ module.exports = async (req, res) => {
     ]);
     res.status(200).json({
       configured: true,
+      version: VERSION,
       weeks: weeks.map((r) => ({
         week: isoWeekMonday(r.dimensionValues[0].value),
         visitors: Number(r.metricValues[0].value),
@@ -104,6 +119,7 @@ module.exports = async (req, res) => {
       pages: pages.map((r) => ({ path: r.dimensionValues[0].value, views: Number(r.metricValues[0].value) })),
     });
   } catch (e) {
-    res.status(200).json({ configured: true, error: e.message });
+    // Diagnostic : l'adresse du robot n'est pas un secret, l'afficher aide à repérer une erreur de copie
+    res.status(200).json({ configured: true, version: VERSION, error: `${e.message} (robot utilisé : ${email}, lu dans ${source})` });
   }
 };
