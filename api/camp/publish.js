@@ -151,10 +151,15 @@ module.exports = async (req, res) => {
     const articlePath = `articles/${slug}.html`;
     const existing = await read(articlePath);
     const isNew = existing === null;
-    // Ne jamais écraser un article écrit avant le Camp de base
-    if (!isNew && !existing.includes('content="Camp de base"')) {
-      return res.status(200).json({ ok: false, error: "Un article existe déjà à cette adresse et n'a pas été créé depuis le Camp de base : change l'adresse de l'article." });
+    const news = await read("actualites.html");
+    if (news === null) throw new Error("actualites.html introuvable dans le dépôt.");
+    const listed = news.includes(`href="/articles/${slug}"`);
+    // Ne jamais écraser un article publié qui a été écrit avant le Camp de base.
+    // Un article écrit mais jamais publié (absent de la page Actualités) peut, lui, être publié depuis le Camp de base.
+    if (!isNew && listed && !existing.includes('content="Camp de base"')) {
+      return res.status(200).json({ ok: false, error: "Cet article est déjà publié et a été écrit avant le Camp de base : il n'est pas modifiable d'ici." });
     }
+    const firstPublication = !listed;
     const files = [{ path: articlePath, content: b.html, encoding: "utf-8" }];
 
     let image = b.imageFile || "";
@@ -165,9 +170,7 @@ module.exports = async (req, res) => {
       files.push({ path: `assets/${image}`, content: m[1], encoding: "base64" });
     }
 
-    if (isNew) {
-      const news = await read("actualites.html");
-      if (news === null) throw new Error("actualites.html introuvable dans le dépôt.");
+    if (firstPublication) {
       files.push({
         path: "actualites.html",
         content: updateNews(news, { slug, title: b.title, excerpt: b.excerpt, minutes: b.minutes || 3, tag: b.tag, label: b.label, image }),
@@ -187,13 +190,13 @@ module.exports = async (req, res) => {
       ),
     });
     const commit = await gh("POST", "/git/commits", {
-      message: `${isNew ? "Publie" : "Met à jour"} « ${b.title} » depuis le Camp de base`,
+      message: `${firstPublication ? "Publie" : "Met à jour"} « ${b.title} » depuis le Camp de base`,
       tree: tree.sha,
       parents: [headSha],
     });
     await gh("PATCH", `/git/refs/heads/${BRANCH}`, { sha: commit.sha });
 
-    res.status(200).json({ ok: true, isNew, url: `https://entre2sentiers.com/articles/${slug}`, imageFile: image, commit: commit.sha.slice(0, 7) });
+    res.status(200).json({ ok: true, isNew: firstPublication, url: `https://entre2sentiers.com/articles/${slug}`, imageFile: image, commit: commit.sha.slice(0, 7) });
   } catch (e) {
     const hint =
       e.status === 401 ? " (jeton GitHub invalide ou expiré)" :

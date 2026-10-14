@@ -10,6 +10,7 @@ import {
   today, addDays, weekStart, parseDate, ymd,
 } from "./game.js";
 import { syncAll } from "./sync.js";
+import { importAllArticles } from "./importer.js";
 import { buildArticleHTML, slugify, readMinutes, wordCount, resizePhoto, PILLAR_STYLE } from "./article.js";
 
 const STORE_KEY = "e2s-camp-de-base-v1";
@@ -1087,7 +1088,11 @@ function articleData(c, { preview }) {
     date,
     modified: today(),
     photo: hasPhoto
-      ? { src: preview && ph.data ? ph.data : `../assets/${a.slug}-featured.jpg`, file: `${a.slug}-featured.jpg`, alt: ph.alt, credit: ph.credit }
+      ? (() => {
+          // Nouvelle photo : enregistrée sous <adresse>-featured.jpg ; photo déjà sur le site : on garde son fichier
+          const file = ph.data ? `${a.slug}-featured.jpg` : ph.file;
+          return { src: preview && ph.data ? ph.data : `../assets/${file}`, file, alt: ph.alt, credit: ph.credit };
+        })()
       : null,
     related: relatedFor(c),
   };
@@ -1588,6 +1593,8 @@ menu.addEventListener("click", (e) => {
     link.download = `camp-de-base-${today()}.json`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  } else if (a === "import-articles") {
+    runArticleImport({ manual: true });
   } else if (a === "reset") {
     if (confirm("Effacer toutes tes modifications et repartir des données de départ ? Exporte d'abord une sauvegarde si besoin.")) {
       state = seedState();
@@ -1634,6 +1641,16 @@ setView(startView, { push: false });
 renderHud();
 renderSide();
 initScene();
+
+/* Récupère une fois le texte des articles déjà écrits sur le site */
+async function runArticleImport({ manual = false } = {}) {
+  const n = await importAllArticles(state);
+  state.settings.articlesImported = true;
+  if (n || manual) toast(n ? `${n} article${n > 1 ? "s" : ""} du site récupéré${n > 1 ? "s" : ""} dans le Camp de base` : "Tous les articles du site sont déjà dans le Camp de base");
+  save();
+  if (n) renderAll();
+}
+if (!state.settings.articlesImported) setTimeout(() => runArticleImport(), 2500);
 
 // Synchro automatique au plus toutes les 6 heures
 const lastSync = state.settings.sync?.at;
