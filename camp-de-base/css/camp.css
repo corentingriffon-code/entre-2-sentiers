@@ -720,3 +720,5 @@ body:not([data-screen="sentier"]) .keys-hint { display: none; }
 .preview-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 12px; background: var(--dark); color: var(--paper); font-size: 0.85rem; }
 .preview-frame { flex: 1; width: 100%; border: 0; }
 @media (max-width: 720px) { .article-grid-2 { grid-template-columns: 1fr; } }
+.article-actions [data-siteunpublish] { border-color: rgba(163, 52, 31, 0.4); }
+.article-actions [data-siteunpublish]:hover { background: rgba(163, 52, 31, 0.08); }

@@ -98,6 +98,32 @@ function updateNews(html, a) {
   return out;
 }
 
+/* Retire un article de actualites.html ; s'il était la « Dernière actualité », le premier article de la grille prend sa place */
+function removeFromNews(html, slug) {
+  const href = `/articles/${slug}`;
+  const featRe = /<a class="featured-article" href="([^"]+)"[\s\S]*?<\/a>/;
+  const feat = html.match(featRe);
+  const cardRe = (h) => new RegExp(`\\n?[ \\t]*<a class="article-card"[^>]*href="${h.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}">[\\s\\S]*?<\\/a>\\n?`);
+  if (feat && feat[1] === href) {
+    const gridStart = html.search(/<section class="blog-section">/);
+    const first = html.slice(gridStart).match(/<a class="article-card" data-pillar="[^"]*" href="([^"]+)">\s*<div class="card-media[^"]*"(?: style="background-image:url\('([^']+)'\);")?>[\s\S]*?<span class="tag ([a-z]+)">([^<]+)<\/span>\s*<h3>([\s\S]*?)<\/h3>\s*(?:<p class="card-excerpt">([\s\S]*?)<\/p>)?\s*(?:<p class="card-meta">([\s\S]*?)<\/p>)?[\s\S]*?<\/a>/);
+    if (!first) throw new Error("Impossible de trouver l'article qui doit remplacer la « Dernière actualité ».");
+    const [, nHref, nImg, nTag, nLabel, nTitle, nExcerpt = "", nMeta = ""] = first;
+    const bg = nImg ? ` style="background-image:url('${nImg}');"` : "";
+    const featured = `<a class="featured-article" href="${nHref}" data-meta="${nMeta.trim() || "Lecture"}"${bg}>
+    <div class="featured-article-body">
+      <span class="tag ${nTag}">${nLabel}</span>
+      <h2>${nTitle.trim()}</h2>
+      <p>${nExcerpt.trim()}</p>
+      <span class="btn btn-primary btn-sm">Lire l'article →</span>
+    </div>
+  </a>`;
+    return html.replace(featRe, featured).replace(cardRe(nHref), "\n");
+  }
+  if (!cardRe(href).test(html)) return html;
+  return html.replace(cardRe(href), "\n");
+}
+
 function updateSitemap(xml, slug, date) {
   const loc = `https://entre2sentiers.com/articles/${slug}`;
   const line = `  <url><loc>${loc}</loc><lastmod>${date}</lastmod></url>`;
@@ -129,10 +155,48 @@ module.exports = async (req, res) => {
 
   const slug = String(b.slug || "");
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length > 100) return res.status(400).json({ ok: false, error: "Adresse d'article invalide." });
-  if (typeof b.html !== "string" || b.html.length < 200 || b.html.length > 600000) return res.status(400).json({ ok: false, error: "Contenu de l'article invalide." });
+  const htmlOk = typeof b.html === "string" && b.html.length >= 200 && b.html.length <= 600000;
   const date = /^\d{4}-\d{2}-\d{2}$/.test(b.date) ? b.date : new Date().toISOString().slice(0, 10);
 
   const gh = github(TOKEN, REPO);
+
+  if (b.action !== "unpublish" && !htmlOk) return res.status(400).json({ ok: false, error: "Contenu de l'article invalide." });
+
+  if (b.action === "unpublish") {
+    try {
+      const ref = await gh("GET", `/git/ref/heads/${BRANCH}`);
+      const headSha = ref.object.sha;
+      const head = await gh("GET", `/git/commits/${headSha}`);
+      const read = async (path) => {
+        try {
+          const f = await gh("GET", `/contents/${path}?ref=${headSha}`);
+          return Buffer.from(f.content, "base64").toString("utf8");
+        } catch (e) {
+          if (e.status === 404) return null;
+          throw e;
+        }
+      };
+      const tree = [];
+      if ((await read(`articles/${slug}.html`)) !== null) tree.push({ path: `articles/${slug}.html`, mode: "100644", type: "blob", sha: null });
+      const news = await read("actualites.html");
+      if (news !== null) {
+        const updated = removeFromNews(news, slug);
+        if (updated !== news) tree.push({ path: "actualites.html", mode: "100644", type: "blob", sha: (await gh("POST", "/git/blobs", { content: updated, encoding: "utf-8" })).sha });
+      }
+      const sitemap = await read("sitemap.xml");
+      if (sitemap !== null) {
+        const line = new RegExp(`  <url><loc>https://entre2sentiers\\.com/articles/${slug}</loc><lastmod>[^<]*</lastmod></url>\\n`);
+        if (line.test(sitemap)) tree.push({ path: "sitemap.xml", mode: "100644", type: "blob", sha: (await gh("POST", "/git/blobs", { content: sitemap.replace(line, ""), encoding: "utf-8" })).sha });
+      }
+      if (!tree.length) return res.status(200).json({ ok: true, already: true });
+      const t = await gh("POST", "/git/trees", { base_tree: head.tree.sha, tree });
+      const commit = await gh("POST", "/git/commits", { message: `Dépublie « ${b.title || slug} » depuis le Camp de base`, tree: t.sha, parents: [headSha] });
+      await gh("PATCH", `/git/refs/heads/${BRANCH}`, { sha: commit.sha });
+      return res.status(200).json({ ok: true, commit: commit.sha.slice(0, 7) });
+    } catch (e) {
+      return res.status(200).json({ ok: false, error: e.message });
+    }
+  }
   try {
     const ref = await gh("GET", `/git/ref/heads/${BRANCH}`);
     const headSha = ref.object.sha;
