@@ -983,7 +983,7 @@ function pubRowHTML(p, i) {
         ${statFieldsFor(p.network).map(([k, l]) => `<label>${l}<input class="input" type="number" min="0" step="1" inputmode="numeric" name="stat-${k}" value="${p.stats?.[k] ?? ""}"></label>`).join("")}
       </div>
     </details>
-    <button type="button" class="link danger small" data-delpub="${i}">Retirer cette publication</button>
+    <button type="button" class="link danger small" data-delpub="${i}">${p.network === "site" && p.status === "publie" && draft && onSite(draft.content) ? "Retirer l'article du site" : "Retirer cette publication"}</button>
   </fieldset>`;
 }
 
@@ -1069,18 +1069,21 @@ function rememberPublishCode(code, ok) {
   } catch (e) { /* rien */ }
 }
 
-async function unpublishArticle(btn) {
+async function unpublishArticle(btn, { thenDelete = false } = {}) {
   readEditorForm();
   const c = draft.content;
   const a = art(c);
   const slug = a.slug || c.slug;
-  if (!confirm(`Dépublier « ${c.title} » ?\n\nIl sera retiré du site, de la page Actualités et du plan du site. Tout son contenu reste dans le Camp de base : tu pourras le republier quand tu veux.`)) return;
+  const question = thenDelete
+    ? `« ${c.title} » est en ligne sur le site.\n\nLe supprimer va aussi le retirer du site, de la page Actualités et du plan du site. Continuer ?`
+    : `Retirer « ${c.title} » du site ?\n\nIl sera retiré du site, de la page Actualités et du plan du site. Tout son contenu reste dans le Camp de base : tu pourras le republier quand tu veux.`;
+  if (!confirm(question)) return;
   const cfg = await loadPublishConfig();
   if (!cfg.configured) return toast("La publication n'est pas encore configurée sur Vercel.", "warn");
   const code = getPublishCode();
   if (!code) return;
   btn.disabled = true;
-  btn.textContent = "Retrait…";
+  if (btn.hasAttribute("data-siteunpublish")) btn.textContent = "Retrait…";
   try {
     const r = await fetch("/api/camp/publish", {
       method: "POST",
@@ -1095,13 +1098,23 @@ async function unpublishArticle(btn) {
     a.publishedAt = null;
     c.status = "pret";
     draft.pubs = draft.pubs.filter((p) => p.network !== "site");
-    renderEditor(); // les lignes de publication affichées doivent correspondre à draft.pubs avant l'enregistrement
     toast("Article retiré du site (effectif dans environ 1 minute).");
+    if (thenDelete) {
+      state.contents = state.contents.filter((x) => x.id !== c.id);
+      state.pubs = state.pubs.filter((p) => p.contentId !== c.id);
+      editor.close();
+      draft = null;
+      afterChange();
+      return;
+    }
+    renderEditor(); // les lignes de publication affichées doivent correspondre à draft.pubs avant l'enregistrement
     commitEditor();
   } catch (err) {
     toast(err.message, "warn");
-    btn.disabled = false;
-    btn.textContent = "Dépublier";
+    if (btn.isConnected) {
+      btn.disabled = false;
+      if (btn.hasAttribute("data-siteunpublish")) btn.textContent = "Dépublier";
+    }
   }
 }
 
@@ -1397,7 +1410,9 @@ function commitEditor() {
       if (!p.date) p.date = t;
     }
   });
-  if (draft.pubs.some((p) => p.status === "publie")) c.status = "publie";
+  // Un article est « Publié » quand il est en ligne sur le site ; les autres contenus dès qu'une publication est faite
+  const live = c.kind === "article" ? draft.pubs.some((p) => p.network === "site" && p.status === "publie") : draft.pubs.some((p) => p.status === "publie");
+  if (live) c.status = "publie";
 
   const idx = state.contents.findIndex((x) => x.id === c.id);
   if (idx >= 0) state.contents[idx] = c;
@@ -1425,6 +1440,7 @@ editor.addEventListener("click", (e) => {
     const i = draft.pubs.findIndex((p) => p.network === n);
     if (i < 0) return add(n);
     const p = draft.pubs[i];
+    if (n === "site" && p.status === "publie" && onSite(draft.content)) return unpublishArticle(tgt);
     if ((p.status === "publie" || hasStats(p)) && !confirm(`Retirer la publication ${NETWORKS[n].label} ? Elle est déjà publiée ou a des stats.`)) return;
     readEditorForm();
     draft.pubs.splice(i, 1);
@@ -1436,6 +1452,9 @@ editor.addEventListener("click", (e) => {
     SOCIALS.forEach((n) => { if (!draft.pubs.some((p) => p.network === n)) draft.pubs.push(newPub(n, d)); });
     renderEditor();
   } else if (tgt.dataset.delpub != null) {
+    const p = draft.pubs[Number(tgt.dataset.delpub)];
+    // Retirer la publication Site d'un article en ligne = le retirer vraiment du site
+    if (p?.network === "site" && p.status === "publie" && onSite(draft.content)) return unpublishArticle(tgt);
     readEditorForm();
     draft.pubs.splice(Number(tgt.dataset.delpub), 1);
     renderEditor();
@@ -1456,6 +1475,8 @@ editor.addEventListener("click", (e) => {
     const a = art(draft.content);
     a.photo = { alt: a.photo?.alt || "", credit: a.photo?.credit || "" };
     renderEditor();
+  } else if (tgt.hasAttribute("data-delete") && onSite(draft.content)) {
+    unpublishArticle(tgt, { thenDelete: true });
   } else if (tgt.hasAttribute("data-delete")) {
     if (confirm(`Supprimer « ${draft.content.title || "ce contenu"} » et ses publications ?`)) {
       state.contents = state.contents.filter((x) => x.id !== draft.content.id);
