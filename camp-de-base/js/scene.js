@@ -94,11 +94,12 @@ function heightAt(x, z) {
   // Lac
   h -= 5 * gauss(x, z, LAKE.x, LAKE.z, LAKE.r * 0.9);
   // Chaîne de montagnes à l'horizon
-  const ring = smooth(115, 190, r);
+  // Assez loin et assez bas pour ne jamais boucher la vue quand on tourne la caméra
+  const ring = smooth(165, 215, r) * smooth(272, 242, r);
   if (ring > 0) {
     const a2 = Math.cos(ang) * 2.4 + 9;
     const b2 = Math.sin(ang) * 2.4 + 4;
-    h += ring * (24 + 70 * ridged(a2, b2) + 18 * ridged(a2 * 2.7, b2 * 2.7));
+    h += ring * (8 + 22 * ridged(a2, b2) + 5 * ridged(a2 * 2.7, b2 * 2.7));
   }
   return h;
 }
@@ -114,8 +115,8 @@ const C = {
 };
 
 function buildTerrain() {
-  const size = 440;
-  const seg = 260;
+  const size = 560;
+  const seg = 320;
   const geo = new THREE.PlaneGeometry(size, size, seg, seg);
   geo.rotateX(-Math.PI / 2);
   const pos = geo.attributes.position;
@@ -135,8 +136,8 @@ function buildTerrain() {
     c.lerp(C.meadowDark, smooth(0.45, 0.75, fbm(x * 0.04 + 7, z * 0.04)) * 0.5);
     // Sur les montagnes de l'horizon, la roche et la neige commencent plus haut (pieds verts près de la caméra)
     const far = smooth(100, 150, Math.hypot(x, z));
-    const rockLine = 12 + 16 * far;
-    const snowLine = 19 + 24 * far;
+    const rockLine = 12 + 6 * far;
+    const snowLine = 19 + 6 * far;
     const rockAmt = Math.max(smooth(rockLine, rockLine + 7, h + (n - 0.5) * 8), smooth(0.84, 0.66, ny) * (1 - far * 0.6));
     tmp.copy(C.rock).lerp(C.rockDark, n);
     c.lerp(tmp, rockAmt);
@@ -870,6 +871,9 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
       target.y + sph.radius * Math.cos(sph.phi),
       target.z + sph.radius * Math.sin(sph.phi) * Math.sin(sph.theta)
     );
+    // Jamais sous le relief
+    const ground = heightAt(camera.position.x, camera.position.z) + 6;
+    if (camera.position.y < ground) camera.position.y = ground;
     camera.lookAt(target);
   }
 
