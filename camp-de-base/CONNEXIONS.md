@@ -135,11 +135,10 @@ Ensuite, le petit nuage en haut indique l'état : **Synchronisé**, **Enregistre
 
 Dans la fiche d'un contenu, sous le **Brouillon**, il y a deux boutons : **✨ Générer un article** et **✨ Générer un post LinkedIn**.
 
-**Fonctionnement gratuit (par défaut)**, avec un compte claude.ai gratuit :
-1. Clique sur un des boutons : Claude s'ouvre avec la demande déjà écrite (ton brouillon, tes notes et les consignes de style) et rédige. Si la demande n'est pas partie toute seule, appuie sur Entrée.
-2. Quand Claude a fini, clique sur **Copier** sous sa réponse, reviens dans le Camp de base, colle-la dans le cadre prévu et clique sur **Remplir l'article** (ou **Remplir le post LinkedIn**).
-
-Claude s'ouvre toujours dans le même onglet du navigateur (une nouvelle conversation à chaque demande). Si ton brouillon est très long, la demande est trop grande pour passer directement : elle est alors copiée, et il suffit de la coller (Ctrl+V) dans Claude.
+**Fonctionnement gratuit (par défaut)**, avec un compte claude.ai gratuit et toujours la même conversation, « Rédaction pour Entre 2 sentiers » (son adresse est inscrite dans `camp-de-base/js/app.js`, constante `REDAC_URL`) :
+1. Clique sur un des boutons : la demande (ton brouillon, tes notes et les consignes de style) est copiée, et ta conversation Claude s'ouvre.
+2. Dans Claude, fais Ctrl+V (⌘+V) puis Entrée.
+3. Quand Claude a fini, clique sur **Copier** sous sa réponse. Colle-la dans **Texte de l'article** : le titre, l'adresse, le chapô, la question et les sources se rangent tout seuls. Pour un post, colle-la dans **Texte du post LinkedIn**.
 
 Ensuite :
 - l'article se range dans « Rédaction de l'article » (texte, chapô, adresse, question de fin). La ligne **Site** s'ouvre pour choisir la date et l'heure ;
