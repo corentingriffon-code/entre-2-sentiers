@@ -977,10 +977,14 @@ function pubRowHTML(p, i) {
           <option value="publie" ${p.status === "publie" ? "selected" : ""}>Publié</option>
         </select>
       </label>
-      <label class="span-2">Lien<input class="input" type="url" name="url" value="${esc(p.url)}" placeholder="https://…"></label>
+      ${p.network === "site"
+        ? `<label class="span-2">Lien<input class="input" type="url" name="url" value="${esc(p.url)}" placeholder="Se remplit tout seul quand tu publies l'article sur le site" readonly></label>`
+        : `<label class="span-2">Lien<input class="input" type="url" name="url" value="${esc(p.url)}" placeholder="https://… (le lien du post une fois publié)"></label>`}
     </div>
     ${SOCIALS.includes(p.network) ? postTextHTML(p, i) : ""}
-    ${p.status === "prevu" ? `<button type="button" class="btn btn-primary btn-sm" data-publish="${i}">Marquer publié <span class="xp-pill">+${XP.pubPublished - XP.pubPlanned}</span></button>` : ""}
+    ${p.network === "site"
+      ? (p.status === "prevu" ? `<button type="button" class="btn btn-primary btn-sm" data-gotoarticle>✍️ Écrire et publier l'article</button>` : "")
+      : p.status === "prevu" ? `<button type="button" class="btn btn-primary btn-sm" data-publish="${i}">Marquer publié <span class="xp-pill">+${XP.pubPublished - XP.pubPlanned}</span></button>` : ""}
     <details class="pub-stats" ${statsOpen ? "open" : ""}>
       <summary>Statistiques ${hasStats(p) ? `<span class="muted">relevées le ${fmtDate(p.statsAt)}</span>` : `<span class="xp-pill">+${XP.stats}</span>`}</summary>
       <div class="stats-inputs">
@@ -1002,6 +1006,8 @@ function postTextHTML(p, i) {
 
 function renderEditor() {
   const c = draft.content;
+  // Publier sur le site = un article : on ouvre toujours la rédaction de l'article
+  if (draft.pubs.some((p) => p.network === "site") && c.kind !== "article") c.kind = "article";
   editor.innerHTML = `
     <form method="dialog" class="editor-form" id="editor-form">
       <header class="editor-head">
@@ -1627,6 +1633,11 @@ editor.addEventListener("click", (e) => {
     const d = draft.pubs.find((p) => p.date)?.date || "";
     draft.pubs.push(newPub(n, d));
     renderEditor();
+    if (n === "site") {
+      const dd = draft;
+      loadPublishConfig().then(() => draft === dd && (readEditorForm(), renderEditor()));
+      editor.querySelector(".article-panel")?.scrollIntoView({ block: "start", behavior: "smooth" });
+    }
   };
   if (tgt.dataset.togglenet) {
     const n = tgt.dataset.togglenet;
@@ -1659,6 +1670,11 @@ editor.addEventListener("click", (e) => {
     renderEditor();
   } else if (tgt.dataset.gen) {
     generate(tgt.dataset.gen, tgt);
+  } else if (tgt.hasAttribute("data-gotoarticle")) {
+    const panel = editor.querySelector(".article-panel");
+    panel?.setAttribute("open", "");
+    panel?.scrollIntoView({ block: "start", behavior: "smooth" });
+    setTimeout(() => editor.querySelector('[name="a-body"]')?.focus({ preventScroll: true }), 400);
   } else if (tgt.hasAttribute("data-copyprompt")) {
     copyText(draft.genPaste?.prompt || "").then(() => toast("Demande copiée : colle-la dans Claude."), () => toast("Copie impossible.", "warn"));
   } else if (tgt.hasAttribute("data-gencancel")) {
