@@ -81,6 +81,9 @@ function material(b) {
   if (b.pillar) parts.push(`<thematique>${b.pillar}</thematique>`);
   if (b.draft) parts.push(`<brouillon>\n${b.draft}\n</brouillon>`);
   if (b.notes) parts.push(`<notes>\n${b.notes}\n</notes>`);
+  if (b.mode === "linkedin" && b.linkedinModel) {
+    parts.push(`Voici un de mes posts LinkedIn qui a très bien marché. Inspire-toi de sa structure, de son accroche, de son rythme, de sa longueur, de sa mise en page et de son ton (emojis et hashtags compris). Ne recopie ni ses phrases ni son sujet. Sur la forme (emojis, longueur, hashtags, mise en page), ce post modèle l'emporte sur les consignes ci-dessus.\n<post_modele>\n${b.linkedinModel}\n</post_modele>`);
+  }
   const a = b.article || {};
   if (b.mode === "linkedin" && a.body) {
     parts.push(`<article_publie_ou_prevu>\n${a.excerpt ? `Chapô : ${a.excerpt}\n\n` : ""}${a.body}\n</article_publie_ou_prevu>`);
@@ -109,6 +112,7 @@ module.exports = async (req, res) => {
     pillar: clip(b.pillar, 60),
     draft: clip(b.draft, 60000),
     notes: clip(b.notes, 20000),
+    linkedinModel: clip(b.linkedinModel, 6000),
     article: { excerpt: clip(b.article?.excerpt, 600), body: clip(b.article?.body, 60000), url: clip(b.article?.url, 300) },
   };
   if (!input.draft.trim() && !input.article.body.trim()) {

@@ -45,8 +45,11 @@ const LINKEDIN_RULES = `Rédige un post LinkedIn à partir de cette matière.
 
 Réponds UNIQUEMENT avec le texte du post, prêt à copier, sans phrase avant ou après.`;
 
-export function buildPrompt(mode, { title, pillar, draft, notes, article = {} }) {
+export const MODEL_RULE = `Voici un de mes posts LinkedIn qui a très bien marché. Inspire-toi de sa structure, de son accroche, de son rythme, de sa longueur, de sa mise en page et de son ton (emojis et hashtags compris). Ne recopie ni ses phrases ni son sujet. Sur la forme (emojis, longueur, hashtags, mise en page), ce post modèle l'emporte sur les consignes ci-dessus.`;
+
+export function buildPrompt(mode, { title, pillar, draft, notes, linkedinModel = "", article = {} }) {
   const parts = [VOICE, mode === "article" ? ARTICLE_RULES : LINKEDIN_RULES];
+  if (mode === "linkedin" && linkedinModel) parts.push(`${MODEL_RULE}\n<post_modele>\n${linkedinModel}\n</post_modele>`);
   if (title) parts.push(`<titre>${title}</titre>`);
   if (pillar) parts.push(`<thematique>${pillar}</thematique>`);
   if (draft) parts.push(`<brouillon>\n${draft}\n</brouillon>`);
