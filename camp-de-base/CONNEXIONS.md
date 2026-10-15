@@ -136,11 +136,10 @@ Ensuite, le petit nuage en haut indique l'état : **Synchronisé**, **Enregistre
 Dans la fiche d'un contenu, sous le **Brouillon**, il y a deux boutons : **✨ Générer un article** et **✨ Générer un post LinkedIn**.
 
 **Fonctionnement gratuit (par défaut)**, avec un compte claude.ai gratuit :
-1. Clique sur un des boutons. La demande (ton brouillon, tes notes et les consignes de style) est copiée, et Claude s'ouvre dans un nouvel onglet.
-2. Dans Claude, colle (Ctrl+V ou ⌘+V) et envoie.
-3. Sous la réponse de Claude, clique sur **Copier**. Reviens dans le Camp de base, colle la réponse dans le cadre prévu, puis clique sur **Remplir l'article** ou **Remplir le post LinkedIn**.
+1. Clique sur un des boutons : Claude s'ouvre avec la demande déjà écrite (ton brouillon, tes notes et les consignes de style) et rédige. Si la demande n'est pas partie toute seule, appuie sur Entrée.
+2. Quand Claude a fini, clique sur **Copier** sous sa réponse, reviens dans le Camp de base, colle-la dans le cadre prévu et clique sur **Remplir l'article** (ou **Remplir le post LinkedIn**).
 
-**Un seul onglet pour tout** : la première fois, renomme la conversation Claude « Rédaction pour Entre 2 sentiers » (clique sur son titre en haut de Claude). Copie ensuite son adresse depuis la barre d'adresse (elle commence par `https://claude.ai/chat/`), colle-la dans le cadre du Camp de base et clique sur **Enregistrer**. Ensuite, aucun nouvel onglet ne s'ouvre : chaque demande d'article ou de post se colle dans cette même conversation. L'adresse est synchronisée sur tes appareils. Quand la conversation devient très longue et que Claude le signale, utilise « Changer de conversation » pour en démarrer une nouvelle.
+Claude s'ouvre toujours dans le même onglet du navigateur (une nouvelle conversation à chaque demande). Si ton brouillon est très long, la demande est trop grande pour passer directement : elle est alors copiée, et il suffit de la coller (Ctrl+V) dans Claude.
 
 Ensuite :
 - l'article se range dans « Rédaction de l'article » (texte, chapô, adresse, question de fin). La ligne **Site** s'ouvre pour choisir la date et l'heure ;
