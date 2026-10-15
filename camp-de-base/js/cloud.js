@@ -132,7 +132,13 @@ export function createCloud({ storeKey, getState, setState, storedCode, askCode,
         if (r.ok && j.ok && c.article?.photo?.data === data) { c.article.photo.syncedHash = photoHash(data); changed = true; }
       } catch (e) { /* réessayé au prochain enregistrement */ }
     }
-    if (changed) { onPhotos?.(); touched(); }
+    if (changed) {
+      onPhotos?.();
+      // renvoyer tout de suite la fiche avec la marque « photo en ligne »
+      meta.dirty = true;
+      saveMeta();
+      pendingPush = true;
+    }
   }
 
   /* Photos présentes en ligne mais pas encore sur cet appareil */
