@@ -1030,6 +1030,12 @@ function renderEditor() {
         <button type="button" class="btn btn-gen" data-gen="article">✨ Générer un article</button>
         <button type="button" class="btn btn-gen" data-gen="linkedin">✨ Générer un post LinkedIn</button>
         <span id="gen-note">${genNoteHTML()}</span>
+        <details class="gen-model" ${state.settings.linkedinModel ? "" : "open"}>
+          <summary>Post LinkedIn modèle ${state.settings.linkedinModel ? `<span class="muted small">enregistré · ${fmt(state.settings.linkedinModel.length)} caractères</span>` : `<span class="muted small">à remplir une fois</span>`}</summary>
+          <label><span class="muted small">Colle ici le texte d'un de tes posts qui a bien marché : Claude s'en inspire (accroche, rythme, longueur, ton) pour chaque nouveau post, sans le recopier.</span>
+            <textarea class="input" name="li-model" rows="6" placeholder="Le texte complet de ton post LinkedIn…">${esc(state.settings.linkedinModel || "")}</textarea>
+          </label>
+        </details>
       </div>
       <label>Notes (sources, angle, visuels…)
         <textarea class="input" name="notes" rows="3">${esc(c.notes)}</textarea>
@@ -1103,6 +1109,7 @@ function genInput(c) {
     pillar: PILLARS[c.pillar] || "",
     draft: c.text,
     notes: c.notes,
+    linkedinModel: state.settings.linkedinModel || "",
     article: c.kind === "article" ? { excerpt: a.excerpt || "", body: a.body || "", url: slug ? ARTICLE_URL + slug : "" } : {},
   };
 }
@@ -1699,6 +1706,14 @@ editor.addEventListener("input", (e) => {
   }
 });
 editor.addEventListener("change", async (e) => {
+  if (e.target.name === "li-model") {
+    const v = e.target.value.trim();
+    if (v) state.settings.linkedinModel = v;
+    else delete state.settings.linkedinModel;
+    save();
+    toast(v ? "Post modèle enregistré : les prochains posts LinkedIn s'en inspireront." : "Post modèle retiré.");
+    return;
+  }
   if (!draft) return;
   if (e.target.name === "kind") {
     readEditorForm();
