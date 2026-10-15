@@ -750,3 +750,15 @@ body:not([data-screen="sentier"]) .keys-hint { display: none; }
 @media (max-width: 1080px) { .cloud-label { display: none; } }
 .cloud-chip[data-state="empty"] { color: var(--dark); background: var(--lime); border-color: var(--lime-deep); }
 .cloud-chip[data-state="empty"] .cloud-label { display: inline; }
+
+/* Rédaction par Claude à partir du brouillon */
+.gen-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: -4px; }
+.gen-actions #gen-note { flex-basis: 100%; }
+.btn-gen { background: rgba(159, 175, 107, 0.22); color: var(--dark); border: 1px solid rgba(93, 122, 28, 0.45); }
+.btn-gen:hover { background: rgba(159, 175, 107, 0.4); }
+.btn-gen.is-loading { cursor: progress; opacity: 1; background: repeating-linear-gradient(-45deg, rgba(159, 175, 107, 0.22) 0 10px, rgba(159, 175, 107, 0.42) 10px 20px); background-size: 28px 28px; animation: gen-stripes 0.8s linear infinite; }
+@keyframes gen-stripes { to { background-position: 28px 0; } }
+@media (prefers-reduced-motion: reduce) { .btn-gen.is-loading { animation: none; } }
+.post-text { display: grid; gap: 4px; width: 100%; margin-top: 10px; }
+.post-text textarea { width: 100%; font-size: 0.92rem; font-weight: 400; line-height: 1.5; resize: vertical; }
+.post-text-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
