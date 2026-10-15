@@ -104,3 +104,27 @@ Le code de publication est important : le Camp de base n'a pas de mot de passe, 
 - l'ajoute au plan du site (`sitemap.xml`) ; l'accueil se met à jour tout seul.
 - « Mettre à jour sur le site » republie un article créé depuis le Camp de base. Un article écrit avant le Camp de base n'est jamais écrasé.
 - La version anglaise n'est pas créée automatiquement.
+
+---
+
+## 4. Retrouver les mêmes données sur tous tes appareils : environ 3 minutes
+
+Sans cette étape, chaque ordinateur garde ses propres données (contenus, tâches, notes, stats saisies). Avec elle, tout est enregistré en ligne quelques secondes après chaque modification, et chaque appareil récupère la dernière version à l'ouverture.
+
+**A. Ajouter la base de données (gratuite)**
+
+1. Sur https://vercel.com → projet **entre-2-sentiers** → onglet **Storage**.
+2. **Create Database** (ou **Browse Marketplace**) → choisis **Upstash** → **Redis** → offre **Free**.
+3. Donne-lui un nom (`camp-de-base`), région Europe, puis **Create**.
+4. À l'étape **Connect Project**, choisis **entre-2-sentiers** et coche **Production** → **Connect**. Vercel ajoute tout seul les variables `KV_REST_API_URL` et `KV_REST_API_TOKEN`.
+5. **Deployments → ⋯ → Redeploy**.
+
+Le code de publication (`PUBLISH_CODE`, déjà créé) protège l'accès à tes données : c'est lui que le Camp de base te demande.
+
+**B. Activer la synchro (une seule fois)**
+
+1. Ouvre le Camp de base **sur l'ordinateur qui a tes données les plus à jour**.
+2. En haut, clique sur le bouton vert **☁ Activer la synchro** et confirme.
+3. Sur tes autres appareils, ouvre simplement le Camp de base : ils récupèrent les données (et leurs propres ajouts sont fusionnés).
+
+Ensuite, le petit nuage en haut indique l'état : **Synchronisé**, **Enregistrement…**, **Hors ligne** (les modifications partiront au retour du réseau). Les photos d'articles pas encore publiés restent sur l'appareil où tu les as ajoutées.

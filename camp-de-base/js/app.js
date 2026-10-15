@@ -10,6 +10,7 @@ import {
   today, addDays, weekStart, parseDate, ymd,
 } from "./game.js";
 import { syncAll } from "./sync.js";
+import { createCloud } from "./cloud.js";
 import { importAllArticles } from "./importer.js";
 import { buildArticleHTML, slugify, readMinutes, wordCount, resizePhoto, PILLAR_STYLE } from "./article.js";
 
@@ -41,9 +42,10 @@ function load() {
 }
 let state = load();
 let storageOk = true;
-function save() {
+function save({ fromCloud = false } = {}) {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    if (!fromCloud) cloud?.touched();
   } catch (e) {
     if (storageOk) toast("Impossible d'enregistrer dans ce navigateur : pense à exporter tes données.", "warn");
     storageOk = false;
@@ -1821,6 +1823,67 @@ if (!state.settings.linkedinLinked) {
   state.settings.linkedinLinked = true;
   save();
 }
+
+/* ---------- Synchronisation entre appareils ---------- */
+
+const CLOUD_LABELS = {
+  ok: ["☁", "Synchronisé"],
+  saving: ["☁", "Enregistrement…"],
+  offline: ["☁", "Hors ligne"],
+  off: ["☁", "Synchro à configurer"],
+  badcode: ["☁", "Code incorrect"],
+  nocode: ["☁", "Code requis"],
+  error: ["☁", "Erreur de synchro"],
+  empty: ["☁", "Activer la synchro"],
+};
+function showCloudStatus(st, info) {
+  const el = $("#cloud-status");
+  if (!el) return;
+  const [icon, label] = CLOUD_LABELS[st] || CLOUD_LABELS.off;
+  el.dataset.state = st;
+  el.innerHTML = `<span aria-hidden="true">${icon}</span><span class="cloud-label">${label}</span>`;
+  el.title =
+    st === "ok" ? `Tes données sont les mêmes sur tous tes appareils${info ? ` (dernier enregistrement ${ago(info)})` : ""}.` :
+    st === "off" ? `Synchronisation pas encore activée${info ? ` : il manque ${info}` : ""}. Voir CONNEXIONS.md, partie 4.` :
+    st === "empty" ? "Rien n'est encore en ligne : clique ici sur l'appareil qui a tes données les plus à jour." :
+    st === "offline" ? "Pas de connexion : les modifications sont gardées sur cet appareil et partiront au retour du réseau." :
+    st === "badcode" || st === "nocode" ? "Clique pour saisir ton code de publication." :
+    info || "";
+}
+var cloud = createCloud({
+  storeKey: STORE_KEY,
+  getState: () => state,
+  setState: (s) => {
+    state = normalizeState(s);
+    if (!Array.isArray(state.seenBadges)) state.seenBadges = badges(state).filter((b) => b.unlocked).map((b) => b.id);
+    lastXP = computeXP(state);
+    lastLevel = levelFor(lastXP).index;
+    save({ fromCloud: true });
+  },
+  storedCode: () => { try { return localStorage.getItem(STORE_KEY + ":publish") || ""; } catch (e) { return ""; } },
+  askCode: () => (prompt("Synchronisation entre tes appareils : entre ton code de publication (celui choisi sur Vercel).") || "").trim(),
+  rememberCode: rememberPublishCode,
+  onStatus: showCloudStatus,
+});
+$("#cloud-status").addEventListener("click", async () => {
+  if (cloud.status === "empty") {
+    if (confirm("Mettre en ligne les données de CET appareil ?\n\nFais-le sur l'ordinateur qui a tes données les plus à jour : elles deviendront la référence, et tes autres appareils les récupéreront automatiquement (leurs ajouts seront fusionnés).")) {
+      await cloud.initialize();
+      toast("Synchronisation activée : tes données sont en ligne.");
+    }
+    return;
+  }
+  if (await cloud.retry()) { renderAll(); toast("Données mises à jour depuis tes autres appareils"); }
+});
+async function cloudPull() {
+  if (await cloud.pull()) {
+    renderAll();
+    toast("Données mises à jour depuis tes autres appareils");
+  }
+}
+cloudPull();
+document.addEventListener("visibilitychange", () => { if (!document.hidden) cloudPull(); });
+window.addEventListener("online", () => cloud.push());
 
 // Synchro automatique au plus toutes les 6 heures
 const lastSync = state.settings.sync?.at;
