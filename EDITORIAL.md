@@ -51,11 +51,9 @@ Rien pour l'instant.
 - `marque-sponsor-sans-lien-avec-le-sport` — cas Marion Haerty x OnlyFans.
 - `ce-que-le-community-management-pourrait-apprendre-du-trail` — publié le 08/10.
 - `decathlon-ne-signe-plus-des-athletes-mais-des-experts` — publié le 12/10. Sujet hors backlog, proposé directement par Corentin à partir de l'actualité Decathlon (rebrand 2024, partenariats Griezmann/Alex Sarr/Mathieu Blanchard/Blandine L'Hirondel, Grand Raid Kiprun 3 Vallées).
-- `sponsoring-sportif-marques-improbables` — publié le 14/10 directement via l'outil « Camp de base » (cas Dacia x UTMB, McDonald's, Burger King, Martini).
+- `sponsoring-sportif-marques-improbables` — publié le 14/10 directement via l'outil « Camp de base » (cas Dacia x UTMB, McDonald's, Burger King, Martini). Visuel Dacia x UTMB World Series ajouté le 15/10 (même photo que `qui-sera-le-grand-gagnant-utmb-2026`).
 
 Note (mis à jour le 15/10) : le site EN a été rattrapé une première fois (10 articles EN reliés depuis `en/news.html` et présents dans `sitemap.xml`, `the-ambassadors-who-wear-no-bib.html` et `what-community-management-could-learn-from-trail-running.html` retraduits pour coller aux versions FR actuelles). Puis les 8 articles FR qui n'avaient encore aucun équivalent EN (`decathlon-ne-signe-plus-des-athletes-mais-des-experts`, `marque-sponsor-sans-lien-avec-le-sport`, `marques-outdoor-partout-sans-publicite`, `ecologie-dans-le-trail-question-binaire`, `marques-outdoor-menacees-par-le-changement-climatique`, `le-sponsoring-sportif-logo-ou-histoire`, `les-marques-ne-devraient-pas-regarder-que-le-podium`, `qui-sera-le-grand-gagnant-utmb-2026`) ont été traduits le même jour, puis `sponsoring-sportif-marques-improbables` le lendemain (15/10, slug EN `does-sports-sponsoring-have-to-make-sense`) : hreflang ajouté sur chaque page FR, nouvelle page dans `en/articles/`, `en/news.html` et `sitemap.xml` mis à jour à chaque fois. Le site compte maintenant 19 articles EN, tous reliés et dans l'ordre chronologique — chaque article FR publié a désormais son équivalent EN.
-
-**Photo manquante** : `sponsoring-sportif-marques-improbables` (FR et EN) n'a aucune image associée — publié sans visuel via « Camp de base », featured-article sans `background-image` sur `actualites.html`/`en/news.html`, `og:image` par défaut. Corentin a signalé ne pas voir de photo sur l'article. À ajouter dès qu'une image pertinente (Dacia x UTMB, ou un visuel qui couvre les 4 marques citées) est fournie.
 
 ## Ancien calendrier (12 semaines, clos)
 
