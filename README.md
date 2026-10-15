@@ -44,3 +44,23 @@ assets/hero-bg.jpg        Photo de fond du hero d'accueil
 ## Déploiement
 
 Le site est 100% statique : il peut être déployé tel quel sur Vercel, Netlify, GitHub Pages ou tout hébergeur statique, sans étape de build.
+
+## Camp de base (outil éditorial gamifié)
+
+`camp-de-base/` est un outil privé pour piloter la publication, pas une page du site : il n'est lié nulle part, il est exclu de l'indexation (meta `noindex`, en-tête `X-Robots-Tag` ; volontairement absent de `robots.txt` pour ne pas signaler son adresse) et il s'ouvre sur `/camp-de-base`.
+
+- **Sentier (3D)** : une montagne low-poly ; chaque contenu est une balise le long du sentier, dans l'ordre chronologique (drapeau vert = publié, drapeau blanc = programmé, cairn = prêt / en rédaction, bille = idée). Les petites pierres colorées au pied d'un drapeau indiquent les réseaux. Le coureur se tient sur la dernière publication ; le drapeau du sommet est l'objectif. Clic sur une balise = ouvrir le contenu.
+- **Balade** : au pied du sentier, un petit village regroupe les lieux du camp (Atelier = Contenus, Refuge = Planning, Cabane = Mémo, Observatoire = Stats ; Trophées au sommet). On déplace le coureur avec ZQSD / WASD / flèches ou en cliquant au sol ; dans un cercle ou près d'une balise, Entrée ouvre le lieu. Les étiquettes flottantes sont cliquables. Échap ramène le coureur sur le sentier.
+- **Planning** : calendrier mensuel. Glisser un contenu prêt sur un jour pour le programmer, glisser une publication pour la déplacer, cliquer sur un numéro de jour pour programmer ce jour-là.
+- **Contenus** : tableau Idée → En rédaction → Prêt → Publié, avec texte du post (compteur de caractères par réseau) et notes.
+- **Stats** : une vue d'ensemble, puis une page par canal.
+  - *Site* : relevé hebdomadaire des visiteurs et pages vues (chiffres lus dans Google Analytics), courbe par semaine, articles les plus lus (vues saisies dans la fiche de chaque article).
+  - *LinkedIn / Instagram / Facebook* : relevés d'abonnés et leur évolution, impressions, taux d'engagement, meilleure publication, tableau des publications du réseau.
+- **Mémo** : tâches (échéance, contenu lié, affichées aussi dans le planning) et notes de couleur modifiables directement.
+- **Trophées** : altitude (« mètres de D+ ») gagnée à chaque étape, paliers du parking au sommet, défis hebdomadaires (objectif d'articles réglable dans le menu ⋯), série de semaines, trophées.
+
+**Connexions automatiques** : le site (Google Analytics 4) et Instagram (compte pro) se synchronisent via deux fonctions Vercel, `api/camp/site.js` et `api/camp/instagram.js`, qui lisent leurs clés dans les variables d'environnement du projet. Pas à pas : `camp-de-base/CONNEXIONS.md`. Le Camp de base peut aussi **publier un article** sur le site (fonction `api/camp/publish.js`, protégée par un code de publication) : un seul commit qui ajoute l'article, sa photo de une, met à jour `actualites.html` et `sitemap.xml` ; le style de la photo de une est dans `css/style.css` (`.article-figure`). LinkedIn et Facebook (profil perso) restent en saisie manuelle.
+
+Les données sont dans le `localStorage` du navigateur (clé `e2s-camp-de-base-v1`) : elles ne sont ni envoyées ni partagées, et ne suivent pas d'un appareil à l'autre. Utiliser **⋯ → Exporter** pour garder une sauvegarde `.json` (et **Importer** pour la recharger ailleurs). Les données de départ (`camp-de-base/js/data.js`) reprennent les articles publiés, les articles prêts et le backlog d'`EDITORIAL.md` au 14/10/2026.
+
+La 3D utilise three.js 0.186.1, copié minifié dans `camp-de-base/vendor/` (la CSP du site n'autorise que les scripts servis par le site lui-même).

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Camp de base. Entre 2 sentiers</title>
+  <meta name="description" content="Tableau de bord éditorial gamifié d'Entre 2 sentiers : contenus, calendrier, réseaux et statistiques.">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="stylesheet" href="/camp-de-base/css/camp.css">
+</head>
+<body data-screen="sentier">
+
+  <div id="scene" class="scene" aria-hidden="true"></div>
+  <div id="scene-fallback" class="scene-fallback" hidden>
+    <p>La vue 3D n'est pas disponible sur ce navigateur (WebGL désactivé). Le planning, les contenus et les stats fonctionnent normalement.</p>
+  </div>
+
+  <header class="hud">
+    <a class="brand" href="/" title="Retour au site">
+      <span class="brand-script">Entre 2 sentiers</span>
+      <span class="brand-title">Camp de base</span>
+    </a>
+
+    <div class="altitude" id="altitude" aria-live="polite">
+      <div class="altitude-top">
+        <span class="altitude-value"><strong id="xp-value">0</strong> m de D+</span>
+        <span class="altitude-level" id="level-name">Parking du départ</span>
+      </div>
+      <div class="bar" role="progressbar" aria-label="Progression vers le prochain palier" aria-valuemin="0" aria-valuemax="100" id="level-bar"><span></span></div>
+      <div class="altitude-next" id="level-next"></div>
+    </div>
+
+    <div class="streak" id="streak" title="Semaines d'affilée à l'objectif d'articles">
+      <span class="streak-icon" aria-hidden="true">🔥</span>
+      <span><strong id="streak-value">0</strong> <span class="streak-unit">sem.</span></span>
+    </div>
+
+    <div class="hud-actions">
+      <button class="btn btn-primary" id="btn-new" type="button">+ Nouveau contenu</button>
+      <button class="btn btn-ghost btn-icon" id="btn-menu" type="button" aria-haspopup="true" aria-expanded="false" title="Sauvegarde et réglages">⋯</button>
+      <div class="menu" id="menu" hidden>
+        <button type="button" data-action="export">Exporter mes données (.json)</button>
+        <label class="menu-file">Importer une sauvegarde<input type="file" id="import-file" accept="application/json,.json"></label>
+        <label class="menu-goal">Objectif articles / semaine
+          <input type="number" id="goal-input" min="1" max="14" step="1">
+        </label>
+        <button type="button" data-action="import-articles">Récupérer le texte des articles du site</button>
+        <button type="button" data-action="reset" class="danger">Repartir des données de départ</button>
+        <p class="menu-note">Les données sont enregistrées dans ce navigateur uniquement. Exporte une sauvegarde de temps en temps.</p>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Vues">
+    <button type="button" data-view="sentier" aria-current="page"><span aria-hidden="true">⛰️</span> Sentier</button>
+    <button type="button" data-view="planning"><span aria-hidden="true">🗓️</span> Planning</button>
+    <button type="button" data-view="contenus"><span aria-hidden="true">✍️</span> Contenus</button>
+    <button type="button" data-view="stats"><span aria-hidden="true">📊</span> Stats</button>
+    <button type="button" data-view="memo"><span aria-hidden="true">📝</span> Mémo</button>
+    <button type="button" data-view="trophees"><span aria-hidden="true">🏆</span> Trophées</button>
+  </nav>
+
+  <aside class="side" id="side" aria-label="Mission et défis"></aside>
+
+  <div class="scene-controls" id="scene-controls">
+    <button type="button" class="btn btn-ghost btn-sm" data-cam="runner">Mon coureur</button>
+    <button type="button" class="btn btn-ghost btn-sm" data-cam="overview">Vue d'ensemble</button>
+    <div class="legend" aria-label="Légende">
+      <span><i class="lg lg-flag"></i>Publié</span>
+      <span><i class="lg lg-flag-white"></i>Programmé</span>
+      <span><i class="lg lg-cairn"></i>Prêt / en rédaction</span>
+      <span><i class="lg lg-orb"></i>Idée</span>
+    </div>
+  </div>
+
+  <div class="keys-hint" id="keys-hint" aria-label="Commandes de la balade">
+    <div><strong>Marcher</strong><span class="kbds"><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd></span><span>ou flèches, ou clic au sol</span></div>
+    <div><strong>Suivre le sentier</strong><span>les étiquettes montrent les repères</span></div>
+    <div><strong>S'arrêter dans un cercle</strong><span class="kbds"><kbd>Entrée</kbd></span><span>ouvre le lieu</span></div>
+  </div>
+
+  <button type="button" class="near-prompt" id="near-prompt" hidden><kbd>Entrée</kbd><span>Ouvrir</span><strong class="near-label"></strong></button>
+
+  <div class="loader" id="loader" role="status" aria-live="polite">
+    <div class="loader-card">
+      <p class="loader-script">Entre 2 sentiers</p>
+      <p class="loader-title">Camp de base</p>
+      <div class="loader-track"><span class="loader-fill"></span><span class="loader-runner" aria-hidden="true">🏃</span></div>
+      <p class="loader-text">On lace les chaussures…</p>
+    </div>
+  </div>
+
+  <main class="panel" id="panel" tabindex="-1"></main>
+  <button type="button" class="panel-close" id="panel-close" aria-label="Fermer et revenir au sentier" title="Fermer (Échap)" hidden>×</button>
+
+  <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <dialog class="editor" id="editor" aria-labelledby="editor-title"></dialog>
+  <dialog class="levelup" id="levelup"></dialog>
+  <dialog class="preview" id="preview" aria-label="Aperçu de l'article"></dialog>
+
+  <script type="module" src="/camp-de-base/js/app.js"></script>
+</body>
+</html>
