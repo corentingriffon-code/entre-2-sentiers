@@ -1031,7 +1031,6 @@ function renderEditor() {
         <button type="button" class="btn btn-gen" data-gen="linkedin">✨ Générer un post LinkedIn</button>
         <span id="gen-note">${genNoteHTML()}</span>
       </div>
-${genPasteHTML()}
       <label>Notes (sources, angle, visuels…)
         <textarea class="input" name="notes" rows="3">${esc(c.notes)}</textarea>
       </label>
@@ -1091,10 +1090,9 @@ async function loadGenConfig() {
 }
 const genNoteHTML = () => genConfig?.configured
   ? `<span class="muted small">Claude rédige à partir du brouillon et des notes ; tu relis et ajustes avant de publier.</span>`
-  : `<span class="muted small">Gratuit avec ton compte claude.ai : Claude s'ouvre et rédige directement à partir du brouillon, puis tu recolles sa réponse ici.</span>`;
+  : `<span class="muted small">Gratuit : la demande est copiée et ta conversation Claude s'ouvre (Ctrl+V puis Entrée). Colle ensuite sa réponse dans le texte de l'article ou du post : tout se range tout seul.</span>`;
 
 const ARTICLE_URL = "https://entre2sentiers.com/articles/";
-const CLAUDE_URL = "https://claude.ai/new";
 let generating = null; // un seul texte à la fois
 
 function genInput(c) {
@@ -1109,36 +1107,9 @@ function genInput(c) {
   };
 }
 
-/* La demande part directement dans Claude, toujours dans le même onglet du navigateur */
+/* La conversation Claude « Rédaction pour Entre 2 sentiers » : toutes les demandes y vont */
+const REDAC_URL = "https://claude.ai/chat/5d9e3183-8013-4c37-86b2-ee7c811f78b2";
 const REDAC_TARGET = "e2s-redaction";
-const MAX_URL = 12000; // au-delà, l'adresse serait trop longue : on passe par le presse-papiers
-const claudeLink = (prompt) => {
-  const url = `${CLAUDE_URL}?q=${encodeURIComponent(prompt)}`;
-  return url.length <= MAX_URL ? url : CLAUDE_URL;
-};
-
-function genPasteHTML() {
-  const g = draft?.genPaste;
-  if (!g) return "";
-  const what = g.mode === "article" ? "l'article" : "le post LinkedIn";
-  const step1 = g.direct
-    ? `<li><strong>Claude rédige ${what}</strong> dans l'onglet qui vient de s'ouvrir (si la demande n'est pas partie toute seule, appuie sur Entrée).
-            <span class="gen-paste-links"><a class="link small" href="${esc(claudeLink(g.prompt))}" target="${REDAC_TARGET}">Rouvrir Claude avec la demande</a> · <button type="button" class="link small" data-copyprompt>Copier la demande</button></span></li>`
-    : `<li><strong>Ton brouillon est trop long pour être envoyé directement : la demande est copiée.</strong> Dans l'onglet Claude, colle-la (Ctrl+V ou ⌘+V) et envoie.
-            <span class="gen-paste-links"><button type="button" class="link small" data-copyprompt>Copier à nouveau</button> · <a class="link small" href="${CLAUDE_URL}" target="${REDAC_TARGET}">Ouvrir Claude</a></span></li>`;
-  return `
-      <div class="gen-paste" id="gen-paste">
-        <ol>
-          ${step1}
-          <li><strong>Quand Claude a fini</strong>, clique sur « Copier » sous sa réponse et colle-la ici :</li>
-        </ol>
-        <textarea class="input" name="gen-paste" rows="5" placeholder="Colle ici la réponse de Claude…">${esc(g.text || "")}</textarea>
-        <div class="gen-paste-actions">
-          <button type="button" class="btn btn-ghost btn-sm" data-gencancel>Annuler</button>
-          <button type="button" class="btn btn-primary btn-sm" data-genfill>Remplir ${what}</button>
-        </div>
-      </div>`;
-}
 
 function copyText(text) {
   if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
@@ -1162,20 +1133,23 @@ async function generate(mode, btn) {
   // Mode gratuit : pas de clé sur Vercel → on passe par claude.ai
   if (!genConfig?.configured) {
     const prompt = buildPrompt(mode, genInput(c));
-    const link = claudeLink(prompt);
-    const direct = link !== CLAUDE_URL;
-    const tab = window.open(link, REDAC_TARGET);
-    d.genPaste = { mode, prompt, direct, text: "" };
-    renderEditor();
-    if (direct) {
-      toast(tab === null ? "Ton navigateur a bloqué l'ouverture : clique sur « Rouvrir Claude avec la demande »." : `Claude rédige ${mode === "article" ? "l'article" : "le post"} : recolle sa réponse ici quand il a fini.`, tab === null ? "warn" : "");
-    } else {
-      copyText(prompt).then(
-        () => toast("Brouillon long : la demande est copiée, colle-la dans Claude (Ctrl+V)."),
-        () => toast("Copie automatique impossible : clique sur « Copier à nouveau ».", "warn"),
-      );
+    const copied = copyText(prompt); // avant d'ouvrir l'onglet, tant que la page a le focus
+    window.open(REDAC_URL, REDAC_TARGET);
+    // Préparer l'endroit où coller la réponse : le texte de l'article ou le texte du post LinkedIn
+    const date = d.pubs.find((p) => p.date)?.date || "";
+    if (mode === "article") {
+      c.kind = "article";
+      if (!d.pubs.some((p) => p.network === "site")) d.pubs.unshift(newPub("site", date));
+      loadPublishConfig().then(() => draft === d && (readEditorForm(), renderEditor()));
+    } else if (!d.pubs.some((p) => p.network === "linkedin")) {
+      d.pubs.push(newPub("linkedin", date));
     }
-    $("#gen-paste")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    renderEditor();
+    const where = mode === "article" ? "« Texte de l'article »" : "« Texte du post LinkedIn »";
+    copied.then(
+      () => toast(`Demande copiée : dans Claude, fais Ctrl+V (⌘+V) puis Entrée. Colle ensuite sa réponse dans ${where}.`),
+      () => toast("Copie automatique impossible : réessaie le bouton.", "warn"),
+    );
     return;
   }
 
@@ -1235,7 +1209,6 @@ function applyGenerated(mode, result) {
     if (!p) { p = newPub("linkedin", date); d.pubs.push(p); }
     p.text = result;
   }
-  d.genPaste = null;
   renderEditor();
   const target = mode === "article"
     ? editor.querySelector(".article-panel")
@@ -1675,23 +1648,6 @@ editor.addEventListener("click", (e) => {
     panel?.setAttribute("open", "");
     panel?.scrollIntoView({ block: "start", behavior: "smooth" });
     setTimeout(() => editor.querySelector('[name="a-body"]')?.focus({ preventScroll: true }), 400);
-  } else if (tgt.hasAttribute("data-copyprompt")) {
-    copyText(draft.genPaste?.prompt || "").then(() => toast("Demande copiée : colle-la dans Claude."), () => toast("Copie impossible.", "warn"));
-  } else if (tgt.hasAttribute("data-gencancel")) {
-    readEditorForm();
-    draft.genPaste = null;
-    renderEditor();
-  } else if (tgt.hasAttribute("data-genfill")) {
-    const g = draft.genPaste;
-    const raw = editor.querySelector('[name="gen-paste"]')?.value || "";
-    if (!g || !raw.trim()) { editor.querySelector('[name="gen-paste"]')?.focus(); return toast("Colle d'abord la réponse de Claude.", "warn"); }
-    if (g.mode === "article") {
-      const parsed = parseArticle(raw);
-      if (wordCount(parsed.body) < 80) return toast("Le texte collé semble incomplet : copie toute la réponse de Claude.", "warn");
-      applyGenerated("article", parsed);
-    } else {
-      applyGenerated("linkedin", cleanPost(raw));
-    }
   } else if (tgt.dataset.copypost != null) {
     readEditorForm();
     const text = draft.pubs[Number(tgt.dataset.copypost)]?.text || "";
@@ -1725,7 +1681,11 @@ editor.addEventListener("submit", (e) => {
 });
 editor.addEventListener("input", (e) => {
   if (e.target.name === "text") updateCharCount();
-  if (e.target.name === "gen-paste" && draft?.genPaste) draft.genPaste.text = e.target.value;
+  // Réponse de Claude collée telle quelle dans le texte de l'article : on range chaque partie à sa place
+  if (e.target.name === "a-body" && /^[#*\s]*={2,}\s*TEXTE\s*={2,}/im.test(e.target.value)) {
+    const parsed = parseArticle(e.target.value);
+    if (parsed.body) applyGenerated("article", parsed);
+  }
   if (e.target.name === "ptext") {
     const row = e.target.closest(".pub-row");
     const p = draft?.pubs[Number(row?.dataset.i)];
