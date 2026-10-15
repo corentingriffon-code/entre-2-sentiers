@@ -131,29 +131,19 @@ Ensuite, le petit nuage en haut indique l'état : **Synchronisé**, **Enregistre
 
 ---
 
-## 5. Faire rédiger l'article et le post LinkedIn par Claude : environ 5 minutes
+## 5. Faire rédiger l'article et le post LinkedIn par Claude : gratuit, rien à configurer
 
-Dans la fiche d'un contenu, sous le **Brouillon**, les boutons **✨ Générer un article** et **✨ Générer un post LinkedIn** envoient ton brouillon (et tes notes) à Claude :
-- l'article est rédigé dans le panneau « Rédaction de l'article » (texte, chapô, adresse, question de fin), et la ligne **Site** s'ouvre pour choisir la date et l'heure ;
-- le post est rédigé dans la ligne **LinkedIn** (zone « Texte du post », compteur sur 3 000 caractères, bouton « Copier le texte »), avec sa date et son heure. Si l'article existe déjà, le post s'appuie dessus et met son lien.
+Dans la fiche d'un contenu, sous le **Brouillon**, il y a deux boutons : **✨ Générer un article** et **✨ Générer un post LinkedIn**.
 
-Claude ne publie rien tout seul : tu relis, tu ajustes, puis tu publies comme d'habitude.
+**Fonctionnement gratuit (par défaut)**, avec un compte claude.ai gratuit :
+1. Clique sur un des boutons. La demande (ton brouillon, tes notes et les consignes de style) est copiée, et Claude s'ouvre dans un nouvel onglet.
+2. Dans Claude, colle (Ctrl+V ou ⌘+V) et envoie.
+3. Sous la réponse de Claude, clique sur **Copier**. Reviens dans le Camp de base, colle la réponse dans le cadre prévu, puis clique sur **Remplir l'article** ou **Remplir le post LinkedIn**.
 
-**A. Créer une clé Anthropic**
+Ensuite :
+- l'article se range dans « Rédaction de l'article » (texte, chapô, adresse, question de fin). La ligne **Site** s'ouvre pour choisir la date et l'heure ;
+- le post se range dans la ligne **LinkedIn** (zone « Texte du post », compteur sur 3 000 caractères, bouton « Copier le texte »), avec sa date et son heure. Si l'article existe déjà, le post s'appuie dessus et met son lien.
 
-1. Va sur https://console.anthropic.com et crée un compte (ou connecte-toi).
-2. **Billing** (Facturation) : ajoute un moyen de paiement et quelques euros de crédit (5 € suffisent pour des dizaines d'articles).
-3. **API Keys** → **Create Key** → nom `camp-de-base` → copie la clé (elle commence par `sk-ant-`). Elle ne s'affiche qu'une fois.
+Claude ne publie rien tout seul : tu relis, tu ajustes, puis tu publies comme d'habitude. Il a pour consigne de ne rien inventer (chiffres, citations, noms) qui ne soit pas dans ton brouillon ou tes notes. Relis quand même les faits.
 
-**B. La variable sur Vercel** (*Settings → Environment Variables*, *Production* cochée)
-
-| Nom | Valeur |
-|---|---|
-| `ANTHROPIC_API_KEY` | la clé copiée |
-
-Puis **Deployments → ⋯ → Redeploy**. Le code demandé est le même que pour publier (`PUBLISH_CODE`) : il empêche quelqu'un d'autre d'utiliser ton crédit.
-
-**Bon à savoir**
-- Un article prend 1 à 2 minutes à rédiger, un post environ 30 secondes. Reste sur la fiche pendant ce temps.
-- Claude reprend tes idées et ton style, et a pour consigne de ne rien inventer (chiffres, citations, noms) qui ne soit pas dans ton brouillon ou tes notes. Relis quand même les faits avant de publier.
-- Si l'article ou le post a déjà un texte, il te demande confirmation avant de le remplacer.
+**Option payante (facultative)** : pour que tout se fasse en un clic, sans copier-coller, ajoute sur Vercel une variable `ANTHROPIC_API_KEY`. La clé se crée sur https://console.anthropic.com, avec du crédit prépayé : environ 10 à 20 centimes par article. Ensuite, fais un Redeploy. Sans cette variable, le mode gratuit reste actif.

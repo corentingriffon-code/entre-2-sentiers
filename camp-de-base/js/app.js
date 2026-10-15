@@ -12,6 +12,7 @@ import {
 import { syncAll } from "./sync.js";
 import { createCloud } from "./cloud.js";
 import { importAllArticles } from "./importer.js";
+import { buildPrompt, parseArticle, cleanPost } from "./prompts.js";
 import { buildArticleHTML, slugify, readMinutes, wordCount, resizePhoto, PILLAR_STYLE } from "./article.js";
 
 const STORE_KEY = "e2s-camp-de-base-v1";
@@ -1024,6 +1025,7 @@ function renderEditor() {
         <button type="button" class="btn btn-gen" data-gen="linkedin">✨ Générer un post LinkedIn</button>
         <span id="gen-note">${genNoteHTML()}</span>
       </div>
+${genPasteHTML()}
       <label>Notes (sources, angle, visuels…)
         <textarea class="input" name="notes" rows="3">${esc(c.notes)}</textarea>
       </label>
@@ -1065,7 +1067,10 @@ async function loadPublishConfig() {
   return publishConfig;
 }
 
-/* ---------- Rédaction par Claude à partir du brouillon ---------- */
+/* ---------- Rédaction par Claude à partir du brouillon ----------
+   Gratuit par défaut : la demande est copiée, claude.ai s'ouvre dans un onglet,
+   et la réponse recollée dans la fiche remplit l'article ou le post.
+   Si une clé ANTHROPIC_API_KEY est configurée sur Vercel, tout se fait directement. */
 
 let genConfig = null;
 async function loadGenConfig() {
@@ -1078,13 +1083,49 @@ async function loadGenConfig() {
   }
   return genConfig;
 }
-
-const genNoteHTML = () => genConfig && !genConfig.configured
-  ? `<span class="sync-missing">Rédaction par Claude pas encore configurée sur Vercel${genConfig.missing?.length ? ` : ${genConfig.missing.join(", ")}` : ""} (voir CONNEXIONS.md, partie 5).</span>`
-  : `<span class="muted small">Claude rédige à partir du brouillon et des notes ; tu relis et ajustes avant de publier.</span>`;
+const genNoteHTML = () => genConfig?.configured
+  ? `<span class="muted small">Claude rédige à partir du brouillon et des notes ; tu relis et ajustes avant de publier.</span>`
+  : `<span class="muted small">Gratuit avec ton compte claude.ai : la demande est copiée, Claude s'ouvre dans un onglet, puis tu recolles sa réponse ici.</span>`;
 
 const ARTICLE_URL = "https://entre2sentiers.com/articles/";
+const CLAUDE_URL = "https://claude.ai/new";
 let generating = null; // un seul texte à la fois
+
+function genInput(c) {
+  const a = c.article || {};
+  const slug = a.slug || c.slug;
+  return {
+    title: c.title,
+    pillar: PILLARS[c.pillar] || "",
+    draft: c.text,
+    notes: c.notes,
+    article: c.kind === "article" ? { excerpt: a.excerpt || "", body: a.body || "", url: slug ? ARTICLE_URL + slug : "" } : {},
+  };
+}
+
+function genPasteHTML() {
+  const g = draft?.genPaste;
+  if (!g) return "";
+  const what = g.mode === "article" ? "l'article" : "le post LinkedIn";
+  return `
+      <div class="gen-paste" id="gen-paste">
+        <ol>
+          <li><strong>La demande pour ${what} est copiée.</strong> Dans l'onglet Claude, colle-la (Ctrl+V ou ⌘+V) et envoie.
+            <span class="gen-paste-links"><button type="button" class="link small" data-copyprompt>Copier à nouveau</button> · <a class="link small" href="${CLAUDE_URL}" target="_blank" rel="noopener">Ouvrir Claude</a></span></li>
+          <li><strong>Copie la réponse de Claude</strong> (bouton « Copier » sous sa réponse) et colle-la ici :</li>
+        </ol>
+        <textarea class="input" name="gen-paste" rows="5" placeholder="Colle ici la réponse de Claude…">${esc(g.text || "")}</textarea>
+        <div class="gen-paste-actions">
+          <button type="button" class="btn btn-ghost btn-sm" data-gencancel>Annuler</button>
+          <button type="button" class="btn btn-primary btn-sm" data-genfill>Remplir ${what}</button>
+        </div>
+      </div>`;
+}
+
+function copyText(text) {
+  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+  return Promise.reject(new Error("clipboard"));
+}
 
 async function generate(mode, btn) {
   if (generating) return toast("Une rédaction est déjà en cours, patiente quelques secondes.");
@@ -1096,35 +1137,37 @@ async function generate(mode, btn) {
     editor.querySelector('textarea[name="text"]')?.focus();
     return toast("Écris d'abord ton brouillon : Claude part de là.", "warn");
   }
-  const cfg = await loadGenConfig();
-  if (!cfg.configured) {
-    renderEditor();
-    return toast(`Rédaction pas encore configurée sur Vercel${cfg.missing?.length ? ` : ${cfg.missing.join(", ")}` : ""}.`, "warn");
-  }
   if (mode === "article" && a.body?.trim() && !confirm("L'article a déjà un texte. Le remplacer par une nouvelle version rédigée à partir du brouillon ?")) return;
   const li = d.pubs.find((p) => p.network === "linkedin");
   if (mode === "linkedin" && li?.text?.trim() && !confirm("Le post LinkedIn a déjà un texte. Le remplacer par une nouvelle version ?")) return;
+
+  // Mode gratuit : pas de clé sur Vercel → on passe par claude.ai
+  if (!genConfig?.configured) {
+    const prompt = buildPrompt(mode, genInput(c));
+    const tab = window.open(CLAUDE_URL, "_blank");
+    if (tab) tab.opener = null;
+    d.genPaste = { mode, prompt, text: "" };
+    renderEditor();
+    copyText(prompt).then(
+      () => toast(tab === null ? "Demande copiée. Ouvre Claude (lien dans la fiche) et colle-la." : "Demande copiée : colle-la dans l'onglet Claude qui vient de s'ouvrir."),
+      () => toast("Copie automatique impossible : clique sur « Copier à nouveau ».", "warn"),
+    );
+    $("#gen-paste")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    return;
+  }
+
   const code = getPublishCode();
   if (!code) return;
-
   generating = mode;
   const label = btn.textContent;
   btn.disabled = true;
   btn.classList.add("is-loading");
   btn.textContent = mode === "article" ? "Rédaction de l'article… (1 à 2 min)" : "Rédaction du post… (environ 30 s)";
-  const slug = a.slug || c.slug;
   try {
     const r = await fetch("/api/camp/generate", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        code, mode,
-        title: c.title,
-        pillar: PILLARS[c.pillar] || "",
-        draft: c.text,
-        notes: c.notes,
-        article: c.kind === "article" ? { excerpt: a.excerpt || "", body: a.body || "", url: slug ? ARTICLE_URL + slug : "" } : {},
-      }),
+      body: JSON.stringify({ code, mode, ...genInput(c) }),
     });
     const j = await r.json().catch(() => ({ ok: false, error: r.status === 504 ? "La rédaction a pris trop de temps, réessaie." : `Erreur ${r.status}` }));
     if (j.badCode) { rememberPublishCode(code, false); throw new Error("Code de publication incorrect."); }
@@ -1132,37 +1175,7 @@ async function generate(mode, btn) {
     if (!j.ok) throw new Error(j.error || "Rédaction impossible.");
     rememberPublishCode(code, true);
     if (draft !== d) return toast(mode === "article" ? "Article rédigé, mais la fiche a été fermée entre-temps." : "Post rédigé, mais la fiche a été fermée entre-temps.", "warn");
-
-    readEditorForm(); // garder ce qui a été tapé pendant la rédaction
-    if (c.status === "idee") c.status = "redaction";
-    const date = d.pubs.find((p) => p.date)?.date || "";
-    let focusNet;
-    if (mode === "article") {
-      const g = j.article;
-      c.kind = "article";
-      const aa = art(c);
-      if (!c.title.trim() && g.title) c.title = g.title.trim();
-      aa.excerpt = (g.excerpt || "").trim();
-      aa.body = (g.body || "").trim();
-      aa.question = (g.question || "").trim();
-      if (g.sources?.trim()) aa.sources = g.sources.trim();
-      if (!aa.publishedAt && !legacyArticle(c) && !c.slug) aa.slug = slugify(g.slug || c.title);
-      if (!d.pubs.some((p) => p.network === "site")) d.pubs.unshift(newPub("site", date));
-      focusNet = "site";
-      loadPublishConfig().then(() => draft === d && (readEditorForm(), renderEditor()));
-    } else {
-      let p = d.pubs.find((x) => x.network === "linkedin");
-      if (!p) { p = newPub("linkedin", date); d.pubs.push(p); }
-      p.text = j.post;
-      focusNet = "linkedin";
-    }
-    renderEditor();
-    const row = $$(".pub-row", editor).find((el) => d.pubs[Number(el.dataset.i)]?.network === focusNet);
-    const target = mode === "article" ? editor.querySelector(".article-panel") : row;
-    target?.scrollIntoView({ block: "start", behavior: "smooth" });
-    toast(mode === "article"
-      ? "Article rédigé. Relis-le, ajoute une photo et choisis la date de publication."
-      : "Post LinkedIn rédigé. Relis-le et choisis la date et l'heure de publication.");
+    applyGenerated(mode, mode === "article" ? j.article : j.post);
   } catch (err) {
     toast(err.message, "warn");
   } finally {
@@ -1173,6 +1186,41 @@ async function generate(mode, btn) {
       btn.textContent = label;
     }
   }
+}
+
+/* Range le texte rédigé dans la fiche et ouvre la ligne Site ou LinkedIn */
+function applyGenerated(mode, result) {
+  readEditorForm(); // garder ce qui a été tapé entre-temps
+  const d = draft;
+  const c = d.content;
+  if (c.status === "idee") c.status = "redaction";
+  const date = d.pubs.find((p) => p.date)?.date || "";
+  if (mode === "article") {
+    const g = result;
+    c.kind = "article";
+    const aa = art(c);
+    if (!c.title.trim() && g.title) c.title = g.title.trim();
+    aa.body = (g.body || "").trim();
+    if (g.excerpt?.trim()) aa.excerpt = g.excerpt.trim();
+    if (g.question?.trim()) aa.question = g.question.trim();
+    if (g.sources?.trim()) aa.sources = g.sources.trim();
+    if (!aa.publishedAt && !legacyArticle(c) && !c.slug) aa.slug = slugify(g.slug || c.title);
+    if (!d.pubs.some((p) => p.network === "site")) d.pubs.unshift(newPub("site", date));
+    loadPublishConfig().then(() => draft === d && (readEditorForm(), renderEditor()));
+  } else {
+    let p = d.pubs.find((x) => x.network === "linkedin");
+    if (!p) { p = newPub("linkedin", date); d.pubs.push(p); }
+    p.text = result;
+  }
+  d.genPaste = null;
+  renderEditor();
+  const target = mode === "article"
+    ? editor.querySelector(".article-panel")
+    : $$(".pub-row", editor).find((el) => d.pubs[Number(el.dataset.i)]?.network === "linkedin");
+  target?.scrollIntoView({ block: "start", behavior: "smooth" });
+  toast(mode === "article"
+    ? "Article rédigé. Relis-le, ajoute une photo et choisis la date de publication."
+    : "Post LinkedIn rédigé. Relis-le et choisis la date et l'heure de publication.");
 }
 
 const art = (c) => (c.article ||= { excerpt: "", body: "", question: "", sources: "", slug: "", photo: {} });
@@ -1594,6 +1642,23 @@ editor.addEventListener("click", (e) => {
     renderEditor();
   } else if (tgt.dataset.gen) {
     generate(tgt.dataset.gen, tgt);
+  } else if (tgt.hasAttribute("data-copyprompt")) {
+    copyText(draft.genPaste?.prompt || "").then(() => toast("Demande copiée : colle-la dans Claude."), () => toast("Copie impossible.", "warn"));
+  } else if (tgt.hasAttribute("data-gencancel")) {
+    readEditorForm();
+    draft.genPaste = null;
+    renderEditor();
+  } else if (tgt.hasAttribute("data-genfill")) {
+    const g = draft.genPaste;
+    const raw = editor.querySelector('[name="gen-paste"]')?.value || "";
+    if (!g || !raw.trim()) { editor.querySelector('[name="gen-paste"]')?.focus(); return toast("Colle d'abord la réponse de Claude.", "warn"); }
+    if (g.mode === "article") {
+      const parsed = parseArticle(raw);
+      if (wordCount(parsed.body) < 80) return toast("Le texte collé semble incomplet : copie toute la réponse de Claude.", "warn");
+      applyGenerated("article", parsed);
+    } else {
+      applyGenerated("linkedin", cleanPost(raw));
+    }
   } else if (tgt.dataset.copypost != null) {
     readEditorForm();
     const text = draft.pubs[Number(tgt.dataset.copypost)]?.text || "";
@@ -1627,6 +1692,7 @@ editor.addEventListener("submit", (e) => {
 });
 editor.addEventListener("input", (e) => {
   if (e.target.name === "text") updateCharCount();
+  if (e.target.name === "gen-paste" && draft?.genPaste) draft.genPaste.text = e.target.value;
   if (e.target.name === "ptext") {
     const row = e.target.closest(".pub-row");
     const p = draft?.pubs[Number(row?.dataset.i)];
