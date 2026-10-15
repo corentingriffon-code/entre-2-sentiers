@@ -1085,7 +1085,9 @@ async function loadGenConfig() {
 }
 const genNoteHTML = () => genConfig?.configured
   ? `<span class="muted small">Claude rédige à partir du brouillon et des notes ; tu relis et ajustes avant de publier.</span>`
-  : `<span class="muted small">Gratuit avec ton compte claude.ai : la demande est copiée, Claude s'ouvre dans un onglet, puis tu recolles sa réponse ici.</span>`;
+  : state.settings.claudeUrl
+    ? `<span class="muted small">Gratuit : la demande est copiée, tu la colles dans ton onglet « Rédaction pour Entre 2 sentiers », puis tu recolles la réponse ici.</span>`
+    : `<span class="muted small">Gratuit avec ton compte claude.ai : la demande est copiée, Claude s'ouvre dans un onglet, puis tu recolles sa réponse ici.</span>`;
 
 const ARTICLE_URL = "https://entre2sentiers.com/articles/";
 const CLAUDE_URL = "https://claude.ai/new";
@@ -1103,15 +1105,30 @@ function genInput(c) {
   };
 }
 
+/* L'onglet de rédaction : une seule conversation claude.ai, réutilisée pour tous les articles et posts */
+const REDAC_NAME = "Rédaction pour Entre 2 sentiers";
+const REDAC_TARGET = "e2s-redaction";
+const redacUrl = () => state.settings.claudeUrl || "";
+const validClaudeUrl = (u) => /^https:\/\/claude\.ai\/(chat|project)\/[\w-]+/.test(u);
+
 function genPasteHTML() {
   const g = draft?.genPaste;
   if (!g) return "";
   const what = g.mode === "article" ? "l'article" : "le post LinkedIn";
+  const url = redacUrl();
+  const step1 = url
+    ? `<li><strong>La demande pour ${what} est copiée.</strong> Va dans ton onglet <em>« ${REDAC_NAME} »</em>, colle-la (Ctrl+V ou ⌘+V) et envoie.
+            <span class="gen-paste-links"><button type="button" class="link small" data-copyprompt>Copier à nouveau</button> · <a class="link small" href="${esc(url)}" target="${REDAC_TARGET}">Ouvrir l'onglet de rédaction</a> · <button type="button" class="link small" data-redacreset>Changer de conversation</button></span></li>`
+    : `<li><strong>La demande pour ${what} est copiée.</strong> Dans l'onglet Claude qui vient de s'ouvrir, colle-la (Ctrl+V ou ⌘+V) et envoie.
+            <span class="gen-paste-links"><button type="button" class="link small" data-copyprompt>Copier à nouveau</button> · <a class="link small" href="${CLAUDE_URL}" target="${REDAC_TARGET}">Ouvrir Claude</a></span>
+            <span class="redac-setup">
+              <span class="small">Pour toujours utiliser le même onglet : dans Claude, renomme cette conversation <em>« ${REDAC_NAME} »</em>, puis colle ici son adresse (la barre d'adresse, elle commence par https://claude.ai/chat/…).</span>
+              <span class="redac-row"><input class="input" name="redac-url" placeholder="https://claude.ai/chat/…" inputmode="url"><button type="button" class="btn btn-ghost btn-sm" data-redacsave>Enregistrer</button></span>
+            </span></li>`;
   return `
       <div class="gen-paste" id="gen-paste">
         <ol>
-          <li><strong>La demande pour ${what} est copiée.</strong> Dans l'onglet Claude, colle-la (Ctrl+V ou ⌘+V) et envoie.
-            <span class="gen-paste-links"><button type="button" class="link small" data-copyprompt>Copier à nouveau</button> · <a class="link small" href="${CLAUDE_URL}" target="_blank" rel="noopener">Ouvrir Claude</a></span></li>
+          ${step1}
           <li><strong>Copie la réponse de Claude</strong> (bouton « Copier » sous sa réponse) et colle-la ici :</li>
         </ol>
         <textarea class="input" name="gen-paste" rows="5" placeholder="Colle ici la réponse de Claude…">${esc(g.text || "")}</textarea>
@@ -1144,12 +1161,13 @@ async function generate(mode, btn) {
   // Mode gratuit : pas de clé sur Vercel → on passe par claude.ai
   if (!genConfig?.configured) {
     const prompt = buildPrompt(mode, genInput(c));
-    const tab = window.open(CLAUDE_URL, "_blank");
-    if (tab) tab.opener = null;
+    // Onglet de rédaction déjà enregistré : on n'ouvre rien, il suffit d'y aller et de coller
+    const url = redacUrl();
+    const tab = url ? null : window.open(CLAUDE_URL, REDAC_TARGET);
     d.genPaste = { mode, prompt, text: "" };
     renderEditor();
     copyText(prompt).then(
-      () => toast(tab === null ? "Demande copiée. Ouvre Claude (lien dans la fiche) et colle-la." : "Demande copiée : colle-la dans l'onglet Claude qui vient de s'ouvrir."),
+      () => toast(url ? `Demande copiée : colle-la dans ton onglet « ${REDAC_NAME} ».` : tab === null ? "Demande copiée. Ouvre Claude (lien dans la fiche) et colle-la." : "Demande copiée : colle-la dans l'onglet Claude qui vient de s'ouvrir."),
       () => toast("Copie automatique impossible : clique sur « Copier à nouveau ».", "warn"),
     );
     $("#gen-paste")?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -1642,6 +1660,20 @@ editor.addEventListener("click", (e) => {
     renderEditor();
   } else if (tgt.dataset.gen) {
     generate(tgt.dataset.gen, tgt);
+  } else if (tgt.hasAttribute("data-redacsave")) {
+    const u = (editor.querySelector('[name="redac-url"]')?.value || "").trim().split(/[?#]/)[0];
+    if (!validClaudeUrl(u)) return toast("Colle l'adresse de la conversation Claude (elle commence par https://claude.ai/chat/).", "warn");
+    readEditorForm();
+    state.settings.claudeUrl = u;
+    save();
+    renderEditor();
+    toast(`Onglet « ${REDAC_NAME} » enregistré : les prochaines demandes iront là.`);
+  } else if (tgt.hasAttribute("data-redacreset")) {
+    if (!confirm(`Oublier la conversation « ${REDAC_NAME} » ? La prochaine demande ouvrira une nouvelle conversation Claude, que tu pourras enregistrer à son tour.`)) return;
+    readEditorForm();
+    delete state.settings.claudeUrl;
+    save();
+    renderEditor();
   } else if (tgt.hasAttribute("data-copyprompt")) {
     copyText(draft.genPaste?.prompt || "").then(() => toast("Demande copiée : colle-la dans Claude."), () => toast("Copie impossible.", "warn"));
   } else if (tgt.hasAttribute("data-gencancel")) {

@@ -140,6 +140,8 @@ Dans la fiche d'un contenu, sous le **Brouillon**, il y a deux boutons : **✨ G
 2. Dans Claude, colle (Ctrl+V ou ⌘+V) et envoie.
 3. Sous la réponse de Claude, clique sur **Copier**. Reviens dans le Camp de base, colle la réponse dans le cadre prévu, puis clique sur **Remplir l'article** ou **Remplir le post LinkedIn**.
 
+**Un seul onglet pour tout** : la première fois, renomme la conversation Claude « Rédaction pour Entre 2 sentiers » (clique sur son titre en haut de Claude). Copie ensuite son adresse depuis la barre d'adresse (elle commence par `https://claude.ai/chat/`), colle-la dans le cadre du Camp de base et clique sur **Enregistrer**. Ensuite, aucun nouvel onglet ne s'ouvre : chaque demande d'article ou de post se colle dans cette même conversation. L'adresse est synchronisée sur tes appareils. Quand la conversation devient très longue et que Claude le signale, utilise « Changer de conversation » pour en démarrer une nouvelle.
+
 Ensuite :
 - l'article se range dans « Rédaction de l'article » (texte, chapô, adresse, question de fin). La ligne **Site** s'ouvre pour choisir la date et l'heure ;
 - le post se range dans la ligne **LinkedIn** (zone « Texte du post », compteur sur 3 000 caractères, bouton « Copier le texte »), avec sa date et son heure. Si l'article existe déjà, le post s'appuie dessus et met son lien.
