@@ -127,7 +127,11 @@ Le code de publication (`PUBLISH_CODE`, déjà créé) protège l'accès à tes 
 2. En haut, clique sur le bouton vert **☁ Activer la synchro** et confirme.
 3. Sur tes autres appareils, ouvre simplement le Camp de base : ils récupèrent les données (et leurs propres ajouts sont fusionnés).
 
-Ensuite, le petit nuage en haut indique l'état : **Synchronisé**, **Enregistrement…**, **Hors ligne** (les modifications partiront au retour du réseau). Les photos d'articles pas encore publiés restent sur l'appareil où tu les as ajoutées.
+Ensuite, le petit nuage en haut indique l'état : **Synchronisé**, **Enregistrement…**, **Hors ligne** (les modifications partiront au retour du réseau). Ce qui est synchronisé : contenus, articles (avec leur photo), publications et textes des posts, planning, tâches, notes, stats saisies, abonnés, réglages. Les suppressions aussi : un élément supprimé sur un appareil ne revient pas depuis un autre.
+
+- Les modifications partent en ligne 2 à 3 secondes après chaque changement, et tout de suite quand tu quittes l'onglet. Si tu fermes la page pendant un envoi, le navigateur te prévient.
+- Un onglet resté ouvert vérifie la version en ligne chaque minute, et à chaque fois que tu reviens dessus.
+- Sur un nouvel appareil, le code de publication est demandé une seule fois.
 
 ---
 
