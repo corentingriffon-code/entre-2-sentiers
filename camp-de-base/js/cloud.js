@@ -7,9 +7,16 @@
    (rien n'est perdu : ce qui existe d'un seul côté est gardé).
    ========================================================= */
 
-const ARRAYS = ["contents", "pubs", "tasks", "notes", "siteStats", "audience"];
+export const ARRAYS = ["contents", "pubs", "tasks", "notes", "siteStats", "audience"];
 
-/* Les photos pas encore publiées (images intégrées) restent sur l'appareil : trop lourdes pour la synchro */
+/* Empreinte rapide d'une photo (pour savoir si elle a déjà été envoyée) */
+export function photoHash(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i += 7) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+  return `${str.length}-${(h >>> 0).toString(36)}`;
+}
+
+/* Les photos (images intégrées) partent à part, une par une : le paquet principal reste léger */
 function slim(state) {
   const copy = JSON.parse(JSON.stringify(state));
   (copy.contents || []).forEach((c) => {
@@ -21,10 +28,14 @@ function slim(state) {
 /* Fusion : les éléments présents d'un seul côté sont gardés ; pour un même élément,
    la version locale l'emporte, sauf pour un appareil qui se synchronise pour la première fois
    (ses données sont peut-être anciennes : c'est alors la version en ligne qui l'emporte). */
+/* Les suppressions sont mémorisées (state.deleted) : un élément supprimé sur un appareil
+   ne revient pas depuis un autre */
 export function mergeStates(local, remote, { preferRemote = false } = {}) {
   const out = preferRemote
     ? { ...local, ...remote, settings: { ...(local.settings || {}), ...(remote.settings || {}) } }
     : { ...remote, ...local, settings: { ...(remote.settings || {}), ...(local.settings || {}) } };
+  const deleted = { ...(remote.deleted || {}), ...(local.deleted || {}) };
+  out.deleted = deleted;
   ARRAYS.forEach((k) => {
     const byId = new Map();
     (remote[k] || []).forEach((x) => byId.set(x.id, x));
@@ -34,13 +45,13 @@ export function mergeStates(local, remote, { preferRemote = false } = {}) {
       // garder une photo locale pas encore synchronisée
       byId.set(x.id, r && k === "contents" && r.article && x.article && !x.article.photo?.data && r.article.photo?.data ? { ...x, article: { ...x.article, photo: r.article.photo } } : x);
     });
-    out[k] = [...byId.values()];
+    out[k] = [...byId.values()].filter((x) => !deleted[x.id]);
   });
   out.seenBadges = [...new Set([...(remote.seenBadges || []), ...(local.seenBadges || [])])];
   return out;
 }
 
-export function createCloud({ storeKey, getState, setState, storedCode, askCode, rememberCode, onStatus }) {
+export function createCloud({ storeKey, getState, setState, storedCode, askCode, rememberCode, onStatus, onPhotos }) {
   const metaKey = storeKey + ":cloud";
   let meta = { version: 0, dirty: true, known: false };
   try { meta = { ...meta, ...JSON.parse(localStorage.getItem(metaKey) || "{}") }; } catch (e) { /* rien */ }
@@ -96,12 +107,46 @@ export function createCloud({ storeKey, getState, setState, storedCode, askCode,
         saveMeta();
         setStatus("ok", res.updatedAt);
       });
+      if (!res.error && !res.badCode && res.configured !== false) await pushPhotos();
     } catch (e) {
       setStatus("offline");
     } finally {
       busy = false;
       if (pendingPush) { pendingPush = false; push(); }
     }
+  }
+
+  /* Photos d'articles : envoyées une par une, puis marquées comme synchronisées */
+  async function pushPhotos() {
+    const todo = getState().contents.filter((c) => c.article?.photo?.data && c.article.photo.syncedHash !== photoHash(c.article.photo.data));
+    let changed = false;
+    for (const c of todo) {
+      const data = c.article.photo.data;
+      try {
+        const r = await fetch(`/api/camp/data?photo=${encodeURIComponent(c.id)}`, {
+          method: "PUT",
+          headers: { "content-type": "application/json", "x-camp-code": storedCode() || "" },
+          body: JSON.stringify({ data }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok && j.ok && c.article?.photo?.data === data) { c.article.photo.syncedHash = photoHash(data); changed = true; }
+      } catch (e) { /* réessayé au prochain enregistrement */ }
+    }
+    if (changed) { onPhotos?.(); touched(); }
+  }
+
+  /* Photos présentes en ligne mais pas encore sur cet appareil */
+  async function pullPhotos() {
+    const todo = getState().contents.filter((c) => c.article?.photo?.syncedHash && !c.article.photo.data);
+    let changed = false;
+    for (const c of todo) {
+      try {
+        const r = await fetch(`/api/camp/data?photo=${encodeURIComponent(c.id)}`, { headers: { "x-camp-code": storedCode() || "" }, cache: "no-store" });
+        const j = await r.json().catch(() => ({}));
+        if (j.data && c.article?.photo && !c.article.photo.data) { c.article.photo.data = j.data; changed = true; }
+      } catch (e) { /* pas grave : réessayé plus tard */ }
+    }
+    if (changed) onPhotos?.();
   }
 
   function handle(res, ok) {
@@ -145,6 +190,7 @@ export function createCloud({ storeKey, getState, setState, storedCode, askCode,
         }
         saveMeta();
       });
+      if (res.data) setTimeout(pullPhotos, 0);
     } catch (e) {
       setStatus("offline");
     } finally {
@@ -162,6 +208,13 @@ export function createCloud({ storeKey, getState, setState, storedCode, askCode,
     timer = setTimeout(push, 2500);
   }
 
+  /* Envoi immédiat (avant de quitter l'onglet) */
+  function flush() {
+    if (!enabled || emptyOnline || !meta.dirty) return;
+    clearTimeout(timer);
+    push();
+  }
+
   function retry() {
     enabled = true;
     return pull();
@@ -174,5 +227,5 @@ export function createCloud({ storeKey, getState, setState, storedCode, askCode,
     await push();
   }
 
-  return { pull, push, touched, retry, initialize, get status() { return status; } };
+  return { pull, push, touched, flush, retry, initialize, pullPhotos, get status() { return status; }, get pending() { return meta.dirty && enabled && !emptyOnline; } };
 }

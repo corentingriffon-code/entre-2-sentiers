@@ -43,6 +43,25 @@ module.exports = async (req, res) => {
   const code = req.headers["x-camp-code"] || "";
   if (!code || !sameCode(code, CODE)) return res.status(401).json({ configured: true, badCode: true, error: "Code incorrect." });
 
+  // Photos d'articles pas encore publiés : une clé par contenu, pour garder le paquet principal léger
+  const photo = String(req.query?.photo || "");
+  if (photo) {
+    if (!/^[\w-]{1,60}$/.test(photo)) return res.status(400).json({ error: "Identifiant invalide." });
+    const pkey = `${KEY}:photo:${photo}`;
+    try {
+      if (req.method === "GET") return res.status(200).json({ configured: true, data: (await redis(URL_, TOKEN, ["GET", pkey])) || null });
+      if (req.method === "PUT") {
+        const b = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+        if (typeof b.data !== "string" || !b.data.startsWith("data:image/") || b.data.length > 3_500_000) return res.status(400).json({ error: "Photo invalide ou trop lourde." });
+        await redis(URL_, TOKEN, ["SET", pkey, b.data]);
+        return res.status(200).json({ configured: true, ok: true });
+      }
+      return res.status(405).json({ error: "Méthode non autorisée" });
+    } catch (e) {
+      return res.status(200).json({ configured: true, error: e.message });
+    }
+  }
+
   try {
     const raw = await redis(URL_, TOKEN, ["GET", KEY]);
     const current = raw ? JSON.parse(raw) : { version: 0, updatedAt: null, data: null };

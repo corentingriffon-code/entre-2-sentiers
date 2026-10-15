@@ -10,7 +10,7 @@ import {
   today, addDays, weekStart, parseDate, ymd,
 } from "./game.js";
 import { syncAll } from "./sync.js";
-import { createCloud } from "./cloud.js";
+import { createCloud, ARRAYS } from "./cloud.js";
 import { importAllArticles } from "./importer.js";
 import { buildPrompt, parseArticle, cleanPost } from "./prompts.js";
 import { buildArticleHTML, slugify, readMinutes, wordCount, resizePhoto, PILLAR_STYLE } from "./article.js";
@@ -43,8 +43,27 @@ function load() {
 }
 let state = load();
 let storageOk = true;
+
+/* Suppressions mémorisées : ce qui disparaît ici ne doit pas revenir depuis un autre appareil */
+const idSets = (s) => Object.fromEntries(ARRAYS.map((k) => [k, new Set((s[k] || []).map((x) => x.id))]));
+let lastIds = idSets(state);
+function trackDeletions() {
+  const now = idSets(state);
+  const del = (state.deleted ||= {});
+  const t = today();
+  ARRAYS.forEach((k) => {
+    lastIds[k].forEach((id) => { if (!now[k].has(id)) del[id] = t; });
+    now[k].forEach((id) => { if (!lastIds[k].has(id)) delete del[id]; }); // recréé ici : plus supprimé
+  });
+  // On oublie les suppressions de plus de 6 mois
+  const limit = ymd(new Date(Date.now() - 183 * 864e5));
+  Object.keys(del).forEach((id) => { if (del[id] < limit) delete del[id]; });
+}
+
 function save({ fromCloud = false } = {}) {
   try {
+    if (!fromCloud) trackDeletions();
+    lastIds = idSets(state);
     localStorage.setItem(STORE_KEY, JSON.stringify(state));
     if (!fromCloud) cloud?.touched();
   } catch (e) {
@@ -2080,6 +2099,10 @@ var cloud = createCloud({
   askCode: () => (prompt("Synchronisation entre tes appareils : entre ton code de publication (celui choisi sur Vercel).") || "").trim(),
   rememberCode: rememberPublishCode,
   onStatus: showCloudStatus,
+  onPhotos: () => {
+    save({ fromCloud: true });
+    if (!draft) renderAll();
+  },
 });
 $("#cloud-status").addEventListener("click", async () => {
   if (cloud.status === "empty") {
@@ -2098,7 +2121,14 @@ async function cloudPull() {
   }
 }
 cloudPull();
-document.addEventListener("visibilitychange", () => { if (!document.hidden) cloudPull(); });
+// En quittant l'onglet : on envoie tout de suite ; en revenant : on récupère la dernière version
+document.addEventListener("visibilitychange", () => { if (document.hidden) cloud.flush(); else cloudPull(); });
+window.addEventListener("pagehide", () => cloud.flush());
+window.addEventListener("beforeunload", (e) => {
+  if (cloud.pending) { cloud.flush(); e.preventDefault(); e.returnValue = ""; }
+});
+// Onglet ouvert sur deux appareils : on vérifie la version en ligne chaque minute
+setInterval(() => { if (!document.hidden && !draft) cloudPull(); }, 60000);
 window.addEventListener("online", () => cloud.push());
 
 // Synchro automatique au plus toutes les 6 heures
