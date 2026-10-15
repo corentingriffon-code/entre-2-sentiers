@@ -768,6 +768,3 @@ body:not([data-screen="sentier"]) .keys-hint { display: none; }
 .gen-paste textarea { width: 100%; font-weight: 400; }
 .gen-paste-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .gen-paste a.link { color: inherit; }
-.redac-setup { display: grid; gap: 6px; margin-top: 8px; padding: 8px 10px; background: rgba(255, 255, 255, 0.6); border-radius: 8px; font-weight: 400; }
-.redac-row { display: flex; gap: 6px; }
-.redac-row .input { flex: 1; min-width: 0; }
