@@ -5,21 +5,21 @@
    ========================================================= */
 
 import * as THREE from "../vendor/three.module.js";
-import { addWind, waterMaterial, skyEnvironment, createPost, windTime } from "./look.js";
+import { addWind, waterMaterial, terrainMaterial, skyEnvironment, createPost, windTime } from "./look.js";
 
 const COLORS = {
-  skyTop: 0xbfd0cf,
-  horizon: 0xf1e9d8,
+  skyTop: 0x3c74bb,
+  horizon: 0xd3e1ec,
   dark: 0x1d261e,
   lime: 0x9faf6b,
   limeDeep: 0x6f8436,
   sand: 0xd7c9ac,
   snow: 0xf6f3ec,
-  trail: 0xdccaa2,
-  trailEdge: 0xb5a07a,
+  trail: 0xe2d6bc,
+  trailEdge: 0xa4977c,
   trailDone: 0xa2b26b,
   trailDoneEdge: 0x6f8538,
-  water: 0x7fa7a8,
+  water: 0x4f7f96,
 };
 
 const STATE_STYLE = {
@@ -30,7 +30,7 @@ const STATE_STYLE = {
   idee: { orb: 0xfdfbf5 },
 };
 
-const SUN_DIR = new THREE.Vector3(70, 62, 40).normalize();
+const SUN_DIR = new THREE.Vector3(70, 78, 36).normalize();
 
 const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.9, metalness: 0, ...extra });
 
@@ -68,6 +68,10 @@ const smooth = (a, b, x) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
 };
+const ridged = (x, z) => {
+  const n = 1 - Math.abs(2 * fbm(x, z) - 1);
+  return n * n;
+};
 const gauss = (x, z, cx, cz, r) => Math.exp(-((x - cx) ** 2 + (z - cz) ** 2) / (2 * r * r));
 
 /* ---------- Relief ---------- */
@@ -78,27 +82,33 @@ function heightAt(x, z) {
   const r = Math.hypot(x, z);
   const ang = Math.atan2(z, x);
   // Sommet principal, légèrement nervuré
-  let h = 42 * Math.exp(-((r / 31) ** 1.8)) * (1 + 0.07 * Math.sin(ang * 3 + r * 0.06) * smooth(4, 14, r));
+  let h = 44 * Math.exp(-((r / 30) ** 1.7)) * (1 + 0.1 * Math.sin(ang * 3 + r * 0.06) * smooth(4, 14, r));
+  // Arêtes et ravines sur les pentes hautes
+  h += smooth(12, 30, h) * (ridged(x * 0.09 + 11, z * 0.09 - 4) - 0.35) * 4.5;
   // Montagnes voisines
-  h += 16 * gauss(x, z, 48, -34, 15);
-  h += 12 * gauss(x, z, -54, 40, 13);
-  h += 9 * gauss(x, z, -30, -62, 12);
+  h += 20 * gauss(x, z, 48, -34, 14) * (0.85 + 0.3 * ridged(x * 0.08, z * 0.08));
+  h += 15 * gauss(x, z, -54, 40, 12) * (0.85 + 0.3 * ridged(x * 0.08 + 5, z * 0.08));
+  h += 11 * gauss(x, z, -30, -62, 11);
   // Collines douces
   h += (fbm(x * 0.03 + 3.1, z * 0.03 - 1.7) - 0.45) * 7 * (1 - 0.8 * Math.exp(-((r / 22) ** 2)));
   // Lac
   h -= 5 * gauss(x, z, LAKE.x, LAKE.z, LAKE.r * 0.9);
   // Chaîne de montagnes à l'horizon
   const ring = smooth(115, 190, r);
-  if (ring > 0) h += ring * (18 + 42 * fbm(Math.cos(ang) * 2.2 + 9, Math.sin(ang) * 2.2 + 4));
+  if (ring > 0) {
+    const a2 = Math.cos(ang) * 2.4 + 9;
+    const b2 = Math.sin(ang) * 2.4 + 4;
+    h += ring * (24 + 70 * ridged(a2, b2) + 18 * ridged(a2 * 2.7, b2 * 2.7));
+  }
   return h;
 }
 
 const C = {
-  meadowLow: new THREE.Color(0xb3bd8c),
-  meadow: new THREE.Color(0x8fa463),
-  meadowDark: new THREE.Color(0x748c4f),
-  rock: new THREE.Color(0xa29b8f),
-  rockDark: new THREE.Color(0x7c776d),
+  meadowLow: new THREE.Color(0x8c9a6d),
+  meadow: new THREE.Color(0x6f8350),
+  meadowDark: new THREE.Color(0x55673f),
+  rock: new THREE.Color(0x85878b),
+  rockDark: new THREE.Color(0x5b5d62),
   snow: new THREE.Color(COLORS.snow),
   sand: new THREE.Color(0xd8cdb2),
 };
@@ -123,13 +133,18 @@ function buildTerrain() {
     const n = fbm(x * 0.08, z * 0.08);
     c.copy(C.meadowLow).lerp(C.meadow, smooth(1, 10, h + (n - 0.5) * 6));
     c.lerp(C.meadowDark, smooth(0.45, 0.75, fbm(x * 0.04 + 7, z * 0.04)) * 0.5);
-    const rockAmt = Math.max(smooth(13, 22, h + (n - 0.5) * 8), smooth(0.86, 0.7, ny));
+    // Sur les montagnes de l'horizon, la roche et la neige commencent plus haut (pieds verts près de la caméra)
+    const far = smooth(100, 150, Math.hypot(x, z));
+    const rockLine = 12 + 16 * far;
+    const snowLine = 19 + 24 * far;
+    const rockAmt = Math.max(smooth(rockLine, rockLine + 7, h + (n - 0.5) * 8), smooth(0.84, 0.66, ny) * (1 - far * 0.6));
     tmp.copy(C.rock).lerp(C.rockDark, n);
     c.lerp(tmp, rockAmt);
-    const snowAmt = smooth(32, 37, h + (n - 0.5) * 8) * smooth(0.45, 0.65, ny);
+    // Neige : partout en altitude, sauf sur les parois trop raides où la roche ressort
+    const snowAmt = smooth(snowLine, snowLine + 6, h + (n - 0.5) * 9) * smooth(0.42, 0.62, ny + (n - 0.5) * 0.15);
     c.lerp(C.snow, snowAmt);
     // Berge du lac
-    c.lerp(C.sand, smooth(0.2, -0.6, h - LAKE.level) * 0.7);
+    c.lerp(C.sand, smooth(0.2, -0.6, h - LAKE.level) * 0.7 * smooth(LAKE.r * 2.4, LAKE.r * 1.5, Math.hypot(x - LAKE.x, z - LAKE.z)));
     // Creux plus sombres, crêtes plus claires (relief lisible, comme une occlusion peinte)
     const around = (heightAt(x + 2.5, z) + heightAt(x - 2.5, z) + heightAt(x, z + 2.5) + heightAt(x, z - 2.5)) / 4;
     const cav = THREE.MathUtils.clamp((around - h) * 0.35, -0.12, 0.18);
@@ -137,7 +152,7 @@ function buildTerrain() {
     colors.set([c.r, c.g, c.b], i * 3);
   }
   geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  const mesh = new THREE.Mesh(geo, mat(0xffffff, { vertexColors: true, roughness: 0.96 }));
+  const mesh = new THREE.Mesh(geo, terrainMaterial(mat(0xffffff, { vertexColors: true, roughness: 0.92 })));
   mesh.receiveShadow = true;
   return mesh;
 }
@@ -167,7 +182,7 @@ function buildSky() {
         float t = smoothstep(-0.02, 0.55, vPos.y);
         vec3 col = mix(horizon, top, t);
         float s = max(dot(normalize(vPos), sunDir), 0.0);
-        col += vec3(1.0, 0.86, 0.62) * (pow(s, 8.0) * 0.22 + pow(s, 64.0) * 0.35);
+        col += vec3(1.0, 0.95, 0.85) * (pow(s, 6.0) * 0.25 + pow(s, 90.0) * 0.6);
         col = mix(col, horizon * 1.03, smoothstep(0.12, -0.02, vPos.y) * 0.6);
         gl_FragColor = vec4(col, 1.0);
         #include <colorspace_fragment>
@@ -255,7 +270,7 @@ function buildForest(curve, avoid = []) {
     const x = (rnd() - 0.5) * 240;
     const z = (rnd() - 0.5) * 240;
     const h = heightAt(x, z);
-    if (h > 18 || h < 1.2) continue;
+    if (h > 16 || h < 1.2) continue;
     // Bosquets : plus dense là où le bruit est élevé
     if (fbm(x * 0.05 + 2, z * 0.05 + 5) < 0.42) continue;
     if (!farFromTrail(trailPts, x, z, 20) || !clear(x, z)) continue;
@@ -283,8 +298,9 @@ function buildForest(curve, avoid = []) {
   const q = new THREE.Quaternion();
   const s = new THREE.Vector3();
   const c = new THREE.Color();
-  const dark = new THREE.Color(0x34502f);
-  const light = new THREE.Color(0x6a8547);
+  const dark = new THREE.Color(0x1f3427);
+  const light = new THREE.Color(0x3f5c3b);
+  const snowTip = new THREE.Color(0xeef3f8);
   spots.forEach((sp, i) => {
     s.set(sp.k, sp.k * (0.95 + sp.tint * 0.35), sp.k);
     m4.compose(new THREE.Vector3(sp.x, sp.h - 0.15, sp.z), q, s);
@@ -292,7 +308,10 @@ function buildForest(curve, avoid = []) {
     c.copy(dark).lerp(light, sp.tint);
     layers.forEach((l, j) => {
       l.setMatrixAt(i, m4);
-      l.setColorAt(i, c.clone().offsetHSL(0, 0.02, j * 0.035));
+      const tc = c.clone().offsetHSL(0, 0.02, j * 0.03);
+      // Plus on monte, plus les étages hauts sont enneigés
+      tc.lerp(snowTip, smooth(10, 16, sp.h) * (0.15 + j * 0.3));
+      l.setColorAt(i, tc);
     });
   });
   trunk.castShadow = true;
@@ -313,7 +332,7 @@ function buildForest(curve, avoid = []) {
     s.set(b.k * 1.3, b.k, b.k * 1.3);
     m4.compose(new THREE.Vector3(b.x, b.h + b.k * 0.4, b.z), q, s);
     bush.setMatrixAt(i, m4);
-    bush.setColorAt(i, c.set(0x86a055).offsetHSL(0, 0, (i % 5) * 0.018 - 0.03));
+    bush.setColorAt(i, c.set(0x5f7b45).offsetHSL(0, 0, (i % 5) * 0.018 - 0.02));
   });
   bush.castShadow = true;
   group.add(bush);
@@ -328,7 +347,7 @@ function buildForest(curve, avoid = []) {
     if (!farFromTrail(trailPts, x, z, 10) || !clear(x, z)) continue;
     rocks.push({ x, z, h, k: 0.35 + rnd() * 0.6, ry: rnd() * 6 });
   }
-  const rock = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 18, 12), mat(0x9d9482), rocks.length);
+  const rock = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 18, 12), mat(0x7c7e83), rocks.length);
   rocks.forEach((r, i) => {
     s.set(r.k * 1.4, r.k * 0.7, r.k);
     m4.compose(new THREE.Vector3(r.x, r.h, r.z), q.setFromEuler(new THREE.Euler(0, r.ry, 0)), s);
@@ -342,7 +361,7 @@ function buildForest(curve, avoid = []) {
 
 function buildClouds() {
   const group = new THREE.Group();
-  const material = mat(0xffffff, { roughness: 1, emissive: 0xfff6ea, emissiveIntensity: 0.45, transparent: true, opacity: 0.94 });
+  const material = mat(0xffffff, { roughness: 1, emissive: 0xf4f8ff, emissiveIntensity: 0.6, transparent: true, opacity: 0.95 });
   const geo = new THREE.SphereGeometry(1, 24, 16);
   for (let i = 0; i < 8; i++) {
     const cloud = new THREE.Group();
@@ -356,8 +375,10 @@ function buildClouds() {
       cloud.add(puff);
     }
     const a = (i / 8) * Math.PI * 2;
-    const r = 105 + (i % 3) * 25;
-    cloud.position.set(Math.cos(a) * r, 64 + (i % 4) * 7, Math.sin(a) * r);
+    // Loin, accrochés aux sommets de l'horizon (jamais devant la caméra)
+    const r = 250 + (i % 3) * 28;
+    cloud.position.set(Math.cos(a) * r, 58 + (i % 4) * 9, Math.sin(a) * r);
+    cloud.scale.setScalar(2.2 + (i % 3) * 0.4);
     cloud.userData.speed = 0.01 + (i % 3) * 0.005;
     cloud.userData.angle = a;
     cloud.userData.radius = r;
@@ -625,21 +646,22 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.VSMShadowMap;
   renderer.toneMapping = THREE.NeutralToneMapping;
-  renderer.toneMappingExposure = 1.02;
+  renderer.toneMappingExposure = 1.0;
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(COLORS.horizon);
-  scene.fog = new THREE.Fog(COLORS.horizon, 150, 420);
+  scene.fog = new THREE.Fog(COLORS.horizon, 230, 640); // brume bleue sur les sommets lointains seulement
   const sky = buildSky();
   scene.add(sky);
   scene.environment = skyEnvironment(renderer, sky);
-  scene.environmentIntensity = 0.55;
+  scene.environmentIntensity = 0.75;
 
   const camera = new THREE.PerspectiveCamera(40, 1, 0.5, 1600);
 
-  scene.add(new THREE.HemisphereLight(0xf4f1e6, 0x6f7a55, 1.05));
-  const sun = new THREE.DirectionalLight(0xffedd6, 2.8);
+  // Ciel bleu en lumière d'appoint : les ombres sur la neige deviennent bleutées
+  scene.add(new THREE.HemisphereLight(0xc6dcff, 0x56634c, 1.0));
+  const sun = new THREE.DirectionalLight(0xfff8ee, 3.3);
   sun.position.copy(SUN_DIR).multiplyScalar(130);
   sun.castShadow = true;
   sun.shadow.mapSize.set(small ? 1024 : 4096, small ? 1024 : 4096);
@@ -650,9 +672,9 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
   sun.shadow.bias = -0.0005;
   scene.add(sun);
 
-  const base = new THREE.Mesh(new THREE.CircleGeometry(900, 64), mat(0xb3bd8c));
+  const base = new THREE.Mesh(new THREE.CircleGeometry(900, 64), mat(0x8c9a6d));
   base.rotation.x = -Math.PI / 2;
-  base.position.y = -0.6;
+  base.position.y = -9; // sous les creux du terrain : ne sert qu'au loin
   scene.add(base);
 
   const terrain = buildTerrain();
@@ -835,10 +857,10 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
   let avatarTarget = 0.02;
 
   /* --- Caméra orbitale maison --- */
-  const HOME = new THREE.Vector3(CAMP.x * 0.76, 8, CAMP.z * 0.76);
+  const HOME = new THREE.Vector3(CAMP.x * 0.66, 11, CAMP.z * 0.66);
   const target = HOME.clone();
   const targetGoal = target.clone();
-  const sph = { theta: CAMP_ANGLE + 0.12, phi: 0.98, radius: 150 };
+  const sph = { theta: CAMP_ANGLE + 0.12, phi: 1.1, radius: 150 };
   const sphGoal = { ...sph };
   let lastInteraction = 0;
 
@@ -1041,7 +1063,7 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
     backToTrail();
     targetGoal.copy(HOME);
     sphGoal.radius = overviewRadius();
-    sphGoal.phi = 0.98;
+    sphGoal.phi = 1.1;
     sphGoal.theta = CAMP_ANGLE + 0.12 + Math.round((sphGoal.theta - CAMP_ANGLE) / (Math.PI * 2)) * Math.PI * 2;
   }
   function celebrate(id) {
@@ -1065,7 +1087,9 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
 
   /* Qualité : occlusion ambiante sur ordinateur, allégée si l'image ralentit */
   const coarse = window.matchMedia("(pointer: coarse)").matches;
-  let quality = small || coarse ? "medium" : "high";
+  // Forçable dans l'adresse : ?qualite=low | medium | high
+  const forced = new URLSearchParams(location.search).get("qualite");
+  let quality = ["low", "medium", "high"].includes(forced) ? forced : small || coarse ? "medium" : "high";
   let post = null;
   try { post = createPost(renderer, scene, camera, quality); } catch (e) { post = null; }
   resize();
@@ -1087,7 +1111,7 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
     const time = timer.getElapsed();
     if (!reducedMotion) windTime.value = time;
     // Mesure sur quelques secondes : si l'image est lente, on retire l'occlusion, puis les effets
-    if (post && time > 2 && perfFrames < 120) {
+    if (post && !forced && time > 2 && perfFrames < 120) {
       perfFrames++;
       perfTime += rawDt;
       if (perfFrames === 120) {
