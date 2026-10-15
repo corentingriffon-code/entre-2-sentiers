@@ -737,3 +737,16 @@ body:not([data-screen="sentier"]) .keys-hint { display: none; }
 }
 .tile-input:hover { border-color: var(--lime-deep); }
 .tile-input:focus { outline: none; border-style: solid; border-color: var(--lime-deep); background: #fff; }
+
+/* Synchronisation entre appareils */
+.cloud-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: rgba(255, 255, 255, 0.6); font-size: 0.78rem; font-weight: 600; color: var(--muted); white-space: nowrap;
+}
+.cloud-chip span:first-child { font-size: 1rem; line-height: 1; }
+.cloud-chip[data-state="ok"] { color: var(--lime-deep); border-color: rgba(93, 122, 28, 0.4); }
+.cloud-chip[data-state="saving"] span:first-child { animation: twinkle 1.2s ease-in-out infinite; }
+.cloud-chip[data-state="badcode"], .cloud-chip[data-state="error"], .cloud-chip[data-state="nocode"] { color: var(--late); border-color: rgba(163, 52, 31, 0.4); }
+@media (max-width: 1080px) { .cloud-label { display: none; } }
+.cloud-chip[data-state="empty"] { color: var(--dark); background: var(--lime); border-color: var(--lime-deep); }
+.cloud-chip[data-state="empty"] .cloud-label { display: inline; }
