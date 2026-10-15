@@ -1,0 +1,8 @@
+{
+  "name": "entre-2-sentiers",
+  "private": true,
+  "description": "Site statique Entre 2 sentiers. Les dépendances ne servent qu'aux fonctions du Camp de base (api/camp).",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.134.0"
+  }
+}

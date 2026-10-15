@@ -1,4 +1,4 @@
-# Brancher le Camp de base sur Google Analytics et Instagram
+# Brancher le Camp de base (Google Analytics, Instagram, publication, synchro, rédaction par Claude)
 
 Le Camp de base lit tes chiffres à travers deux petites fonctions hébergées sur Vercel (`api/camp/site.js` et `api/camp/instagram.js`). Les clés ne sont jamais dans la page : elles vivent dans les **variables d'environnement** du projet Vercel.
 
@@ -128,3 +128,32 @@ Le code de publication (`PUBLISH_CODE`, déjà créé) protège l'accès à tes 
 3. Sur tes autres appareils, ouvre simplement le Camp de base : ils récupèrent les données (et leurs propres ajouts sont fusionnés).
 
 Ensuite, le petit nuage en haut indique l'état : **Synchronisé**, **Enregistrement…**, **Hors ligne** (les modifications partiront au retour du réseau). Les photos d'articles pas encore publiés restent sur l'appareil où tu les as ajoutées.
+
+---
+
+## 5. Faire rédiger l'article et le post LinkedIn par Claude : environ 5 minutes
+
+Dans la fiche d'un contenu, sous le **Brouillon**, les boutons **✨ Générer un article** et **✨ Générer un post LinkedIn** envoient ton brouillon (et tes notes) à Claude :
+- l'article est rédigé dans le panneau « Rédaction de l'article » (texte, chapô, adresse, question de fin), et la ligne **Site** s'ouvre pour choisir la date et l'heure ;
+- le post est rédigé dans la ligne **LinkedIn** (zone « Texte du post », compteur sur 3 000 caractères, bouton « Copier le texte »), avec sa date et son heure. Si l'article existe déjà, le post s'appuie dessus et met son lien.
+
+Claude ne publie rien tout seul : tu relis, tu ajustes, puis tu publies comme d'habitude.
+
+**A. Créer une clé Anthropic**
+
+1. Va sur https://console.anthropic.com et crée un compte (ou connecte-toi).
+2. **Billing** (Facturation) : ajoute un moyen de paiement et quelques euros de crédit (5 € suffisent pour des dizaines d'articles).
+3. **API Keys** → **Create Key** → nom `camp-de-base` → copie la clé (elle commence par `sk-ant-`). Elle ne s'affiche qu'une fois.
+
+**B. La variable sur Vercel** (*Settings → Environment Variables*, *Production* cochée)
+
+| Nom | Valeur |
+|---|---|
+| `ANTHROPIC_API_KEY` | la clé copiée |
+
+Puis **Deployments → ⋯ → Redeploy**. Le code demandé est le même que pour publier (`PUBLISH_CODE`) : il empêche quelqu'un d'autre d'utiliser ton crédit.
+
+**Bon à savoir**
+- Un article prend 1 à 2 minutes à rédiger, un post environ 30 secondes. Reste sur la fiche pendant ce temps.
+- Claude reprend tes idées et ton style, et a pour consigne de ne rien inventer (chiffres, citations, noms) qui ne soit pas dans ton brouillon ou tes notes. Relis quand même les faits avant de publier.
+- Si l'article ou le post a déjà un texte, il te demande confirmation avant de le remplacer.

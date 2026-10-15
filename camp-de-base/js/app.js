@@ -978,6 +978,7 @@ function pubRowHTML(p, i) {
       </label>
       <label class="span-2">Lien<input class="input" type="url" name="url" value="${esc(p.url)}" placeholder="https://…"></label>
     </div>
+    ${SOCIALS.includes(p.network) ? postTextHTML(p, i) : ""}
     ${p.status === "prevu" ? `<button type="button" class="btn btn-primary btn-sm" data-publish="${i}">Marquer publié <span class="xp-pill">+${XP.pubPublished - XP.pubPlanned}</span></button>` : ""}
     <details class="pub-stats" ${statsOpen ? "open" : ""}>
       <summary>Statistiques ${hasStats(p) ? `<span class="muted">relevées le ${fmtDate(p.statsAt)}</span>` : `<span class="xp-pill">+${XP.stats}</span>`}</summary>
@@ -989,9 +990,17 @@ function pubRowHTML(p, i) {
   </fieldset>`;
 }
 
+function postTextHTML(p, i) {
+  const n = (p.text || "").length;
+  const max = CHAR_LIMITS[p.network];
+  return `<label class="post-text">Texte du post ${NETWORKS[p.network].label}
+      <textarea class="input" name="ptext" rows="${p.text ? 10 : 3}" placeholder="Le texte à publier sur ${NETWORKS[p.network].label} (ou génère-le à partir du brouillon).">${esc(p.text)}</textarea>
+      <span class="post-text-foot"><span class="char-count"><span class="${n > max ? "is-over" : ""}">${fmt(n)}</span> / ${fmt(max)} caractères</span>${p.text ? `<button type="button" class="link small" data-copypost="${i}">Copier le texte</button>` : ""}</span>
+    </label>`;
+}
+
 function renderEditor() {
   const c = draft.content;
-  const limits = SOCIALS.filter((n) => draft.pubs.some((p) => p.network === n));
   editor.innerHTML = `
     <form method="dialog" class="editor-form" id="editor-form">
       <header class="editor-head">
@@ -1006,10 +1015,15 @@ function renderEditor() {
         <label>Pilier<select class="input" name="pillar"><option value="">—</option>${Object.entries(PILLARS).map(([k, l]) => `<option value="${k}" ${c.pillar === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
         <label>Étape<select class="input" name="cstatus">${Object.entries(STATUSES).map(([k, l]) => `<option value="${k}" ${c.status === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
       </div>
-      <label>Texte du post / brouillon
-        <textarea class="input" name="text" rows="6" placeholder="Écris ici le texte à publier…">${esc(c.text)}</textarea>
+      <label>Brouillon
+        <textarea class="input" name="text" rows="8" placeholder="Jette ici tes idées, ton angle, tes exemples, tes liens… aussi long que tu veux.">${esc(c.text)}</textarea>
         <span class="char-count" id="char-count"></span>
       </label>
+      <div class="gen-actions">
+        <button type="button" class="btn btn-gen" data-gen="article">✨ Générer un article</button>
+        <button type="button" class="btn btn-gen" data-gen="linkedin">✨ Générer un post LinkedIn</button>
+        <span id="gen-note">${genNoteHTML()}</span>
+      </div>
       <label>Notes (sources, angle, visuels…)
         <textarea class="input" name="notes" rows="3">${esc(c.notes)}</textarea>
       </label>
@@ -1034,7 +1048,7 @@ ${c.kind === "article" ? articlePanelHTML(c) : ""}
         <button type="submit" class="btn btn-primary" value="save">Enregistrer</button>
       </footer>
     </form>`;
-  updateCharCount(limits);
+  updateCharCount();
 }
 
 /* ---------- Rédaction et publication d'un article sur le site ---------- */
@@ -1049,6 +1063,116 @@ async function loadPublishConfig() {
     publishConfig = { configured: false, missing: [] };
   }
   return publishConfig;
+}
+
+/* ---------- Rédaction par Claude à partir du brouillon ---------- */
+
+let genConfig = null;
+async function loadGenConfig() {
+  if (genConfig) return genConfig;
+  try {
+    const r = await fetch("/api/camp/generate", { cache: "no-store" });
+    genConfig = r.ok ? await r.json() : { configured: false, missing: [] };
+  } catch (e) {
+    genConfig = { configured: false, missing: [] };
+  }
+  return genConfig;
+}
+
+const genNoteHTML = () => genConfig && !genConfig.configured
+  ? `<span class="sync-missing">Rédaction par Claude pas encore configurée sur Vercel${genConfig.missing?.length ? ` : ${genConfig.missing.join(", ")}` : ""} (voir CONNEXIONS.md, partie 5).</span>`
+  : `<span class="muted small">Claude rédige à partir du brouillon et des notes ; tu relis et ajustes avant de publier.</span>`;
+
+const ARTICLE_URL = "https://entre2sentiers.com/articles/";
+let generating = null; // un seul texte à la fois
+
+async function generate(mode, btn) {
+  if (generating) return toast("Une rédaction est déjà en cours, patiente quelques secondes.");
+  readEditorForm();
+  const d = draft;
+  const c = d.content;
+  const a = c.article || {};
+  if (!c.text.trim() && !(mode === "linkedin" && a.body?.trim())) {
+    editor.querySelector('textarea[name="text"]')?.focus();
+    return toast("Écris d'abord ton brouillon : Claude part de là.", "warn");
+  }
+  const cfg = await loadGenConfig();
+  if (!cfg.configured) {
+    renderEditor();
+    return toast(`Rédaction pas encore configurée sur Vercel${cfg.missing?.length ? ` : ${cfg.missing.join(", ")}` : ""}.`, "warn");
+  }
+  if (mode === "article" && a.body?.trim() && !confirm("L'article a déjà un texte. Le remplacer par une nouvelle version rédigée à partir du brouillon ?")) return;
+  const li = d.pubs.find((p) => p.network === "linkedin");
+  if (mode === "linkedin" && li?.text?.trim() && !confirm("Le post LinkedIn a déjà un texte. Le remplacer par une nouvelle version ?")) return;
+  const code = getPublishCode();
+  if (!code) return;
+
+  generating = mode;
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.classList.add("is-loading");
+  btn.textContent = mode === "article" ? "Rédaction de l'article… (1 à 2 min)" : "Rédaction du post… (environ 30 s)";
+  const slug = a.slug || c.slug;
+  try {
+    const r = await fetch("/api/camp/generate", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        code, mode,
+        title: c.title,
+        pillar: PILLARS[c.pillar] || "",
+        draft: c.text,
+        notes: c.notes,
+        article: c.kind === "article" ? { excerpt: a.excerpt || "", body: a.body || "", url: slug ? ARTICLE_URL + slug : "" } : {},
+      }),
+    });
+    const j = await r.json().catch(() => ({ ok: false, error: r.status === 504 ? "La rédaction a pris trop de temps, réessaie." : `Erreur ${r.status}` }));
+    if (j.badCode) { rememberPublishCode(code, false); throw new Error("Code de publication incorrect."); }
+    if (j.configured === false) { genConfig = j; throw new Error(j.error); }
+    if (!j.ok) throw new Error(j.error || "Rédaction impossible.");
+    rememberPublishCode(code, true);
+    if (draft !== d) return toast(mode === "article" ? "Article rédigé, mais la fiche a été fermée entre-temps." : "Post rédigé, mais la fiche a été fermée entre-temps.", "warn");
+
+    readEditorForm(); // garder ce qui a été tapé pendant la rédaction
+    if (c.status === "idee") c.status = "redaction";
+    const date = d.pubs.find((p) => p.date)?.date || "";
+    let focusNet;
+    if (mode === "article") {
+      const g = j.article;
+      c.kind = "article";
+      const aa = art(c);
+      if (!c.title.trim() && g.title) c.title = g.title.trim();
+      aa.excerpt = (g.excerpt || "").trim();
+      aa.body = (g.body || "").trim();
+      aa.question = (g.question || "").trim();
+      if (g.sources?.trim()) aa.sources = g.sources.trim();
+      if (!aa.publishedAt && !legacyArticle(c) && !c.slug) aa.slug = slugify(g.slug || c.title);
+      if (!d.pubs.some((p) => p.network === "site")) d.pubs.unshift(newPub("site", date));
+      focusNet = "site";
+      loadPublishConfig().then(() => draft === d && (readEditorForm(), renderEditor()));
+    } else {
+      let p = d.pubs.find((x) => x.network === "linkedin");
+      if (!p) { p = newPub("linkedin", date); d.pubs.push(p); }
+      p.text = j.post;
+      focusNet = "linkedin";
+    }
+    renderEditor();
+    const row = $$(".pub-row", editor).find((el) => d.pubs[Number(el.dataset.i)]?.network === focusNet);
+    const target = mode === "article" ? editor.querySelector(".article-panel") : row;
+    target?.scrollIntoView({ block: "start", behavior: "smooth" });
+    toast(mode === "article"
+      ? "Article rédigé. Relis-le, ajoute une photo et choisis la date de publication."
+      : "Post LinkedIn rédigé. Relis-le et choisis la date et l'heure de publication.");
+  } catch (err) {
+    toast(err.message, "warn");
+  } finally {
+    generating = null;
+    if (btn.isConnected) {
+      btn.disabled = false;
+      btn.classList.remove("is-loading");
+      btn.textContent = label;
+    }
+  }
 }
 
 const art = (c) => (c.article ||= { excerpt: "", body: "", question: "", sources: "", slug: "", photo: {} });
@@ -1323,13 +1447,12 @@ async function publishArticle(btn) {
   }
 }
 
-function updateCharCount(limits) {
+function updateCharCount() {
   const ta = editor.querySelector('textarea[name="text"]');
   const out = $("#char-count");
   if (!ta || !out) return;
   const n = ta.value.length;
-  const nets = limits || SOCIALS.filter((k) => draft.pubs.some((p) => p.network === k));
-  out.innerHTML = `${fmt(n)} caractères${nets.map((k) => ` · <span class="${n > CHAR_LIMITS[k] ? "is-over" : ""}">${NETWORKS[k].label} ${fmt(CHAR_LIMITS[k])}</span>`).join("")}`;
+  out.textContent = `${fmt(n)} caractère${n > 1 ? "s" : ""} · ${fmt(wordCount(ta.value))} mots`;
 }
 
 function readEditorForm() {
@@ -1350,6 +1473,8 @@ function readEditorForm() {
     p.time = row.querySelector('[name="time"]').value;
     p.status = row.querySelector('[name="status"]').value;
     p.url = row.querySelector('[name="url"]').value.trim();
+    const pt = row.querySelector('[name="ptext"]');
+    if (pt) p.text = pt.value;
     STAT_FIELDS.forEach(([k]) => {
       const input = row.querySelector(`[name="stat-${k}"]`);
       if (!input) return;
@@ -1378,6 +1503,7 @@ function openEditor(contentId, { date = "", focusPub = null } = {}) {
   renderEditor();
   tooltip.hidden = true;
   editor.showModal();
+  if (!genConfig) loadGenConfig().then(() => { const el = $("#gen-note"); if (el) el.innerHTML = genNoteHTML(); });
   if (content.kind === "article" && !publishConfig) loadPublishConfig().then(() => draft && draft.content.id === content.id && (readEditorForm(), renderEditor()));
   if (focusPub) {
     const row = $(`#pubrow-${focusPub}`);
@@ -1466,6 +1592,12 @@ editor.addEventListener("click", (e) => {
     p.status = "publie";
     if (!p.date || p.date > today()) p.date = today();
     renderEditor();
+  } else if (tgt.dataset.gen) {
+    generate(tgt.dataset.gen, tgt);
+  } else if (tgt.dataset.copypost != null) {
+    readEditorForm();
+    const text = draft.pubs[Number(tgt.dataset.copypost)]?.text || "";
+    navigator.clipboard?.writeText(text).then(() => toast("Texte copié : il n'y a plus qu'à le coller sur le réseau."), () => toast("Copie impossible : sélectionne le texte à la main.", "warn"));
   } else if (tgt.hasAttribute("data-preview")) {
     openPreview();
   } else if (tgt.hasAttribute("data-sitepublish")) {
@@ -1495,6 +1627,12 @@ editor.addEventListener("submit", (e) => {
 });
 editor.addEventListener("input", (e) => {
   if (e.target.name === "text") updateCharCount();
+  if (e.target.name === "ptext") {
+    const row = e.target.closest(".pub-row");
+    const p = draft?.pubs[Number(row?.dataset.i)];
+    const out = e.target.parentElement.querySelector(".char-count span");
+    if (p && out) { out.textContent = fmt(e.target.value.length); out.classList.toggle("is-over", e.target.value.length > CHAR_LIMITS[p.network]); }
+  }
   if (e.target.name === "a-excerpt") {
     const n = e.target.value.length;
     const out = e.target.parentElement.querySelector(".char-count span");
