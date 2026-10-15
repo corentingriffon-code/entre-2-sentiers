@@ -32,7 +32,7 @@ Pour publier un article déjà écrit (4 à 6) : suivre la procédure "Ajouter u
 
 ## En attente du feu vert de Corentin
 
-- `sponsoring-sportif-marques-improbables` — écrit (Dacia x UTMB, McDonald's, Burger King, Martini), pas encore publié.
+Rien pour l'instant.
 
 ## Articles déjà publiés (pour éviter les doublons de sujet)
 
@@ -51,8 +51,9 @@ Pour publier un article déjà écrit (4 à 6) : suivre la procédure "Ajouter u
 - `marque-sponsor-sans-lien-avec-le-sport` — cas Marion Haerty x OnlyFans.
 - `ce-que-le-community-management-pourrait-apprendre-du-trail` — publié le 08/10.
 - `decathlon-ne-signe-plus-des-athletes-mais-des-experts` — publié le 12/10. Sujet hors backlog, proposé directement par Corentin à partir de l'actualité Decathlon (rebrand 2024, partenariats Griezmann/Alex Sarr/Mathieu Blanchard/Blandine L'Hirondel, Grand Raid Kiprun 3 Vallées).
+- `sponsoring-sportif-marques-improbables` — publié le 14/10 (cas Dacia x UTMB, McDonald's, Burger King, Martini). Pas d'équivalent EN pour l'instant.
 
-Note (mis à jour le 14/10, audit SEO) : le site EN a été rattrapé une première fois (10 articles EN reliés depuis `en/news.html` et présents dans `sitemap.xml`, `the-ambassadors-who-wear-no-bib.html` et `what-community-management-could-learn-from-trail-running.html` retraduits pour coller aux versions FR actuelles). Puis les 8 articles FR qui n'avaient encore aucun équivalent EN (`decathlon-ne-signe-plus-des-athletes-mais-des-experts`, `marque-sponsor-sans-lien-avec-le-sport`, `marques-outdoor-partout-sans-publicite`, `ecologie-dans-le-trail-question-binaire`, `marques-outdoor-menacees-par-le-changement-climatique`, `le-sponsoring-sportif-logo-ou-histoire`, `les-marques-ne-devraient-pas-regarder-que-le-podium`, `qui-sera-le-grand-gagnant-utmb-2026`) ont été traduits le même jour : hreflang ajouté sur les 8 pages FR, 8 nouvelles pages dans `en/articles/`, `en/news.html` et `sitemap.xml` mis à jour. Le site compte maintenant 18 articles EN, tous reliés et dans l'ordre chronologique. Le seul article FR publié sans équivalent EN est désormais `sponsoring-sportif-marques-improbables`, qui n'est lui-même pas encore publié (en attente du feu vert).
+Note (mis à jour le 15/10) : le site EN a été rattrapé une première fois (10 articles EN reliés depuis `en/news.html` et présents dans `sitemap.xml`, `the-ambassadors-who-wear-no-bib.html` et `what-community-management-could-learn-from-trail-running.html` retraduits pour coller aux versions FR actuelles). Puis les 8 articles FR qui n'avaient encore aucun équivalent EN (`decathlon-ne-signe-plus-des-athletes-mais-des-experts`, `marque-sponsor-sans-lien-avec-le-sport`, `marques-outdoor-partout-sans-publicite`, `ecologie-dans-le-trail-question-binaire`, `marques-outdoor-menacees-par-le-changement-climatique`, `le-sponsoring-sportif-logo-ou-histoire`, `les-marques-ne-devraient-pas-regarder-que-le-podium`, `qui-sera-le-grand-gagnant-utmb-2026`) ont été traduits le même jour : hreflang ajouté sur les 8 pages FR, 8 nouvelles pages dans `en/articles/`, `en/news.html` et `sitemap.xml` mis à jour. Le site compte 18 articles EN, tous reliés et dans l'ordre chronologique. `sponsoring-sportif-marques-improbables`, publié le 14/10 directement via l'outil « Camp de base », n'a pas d'équivalent EN — à prévoir si besoin.
 
 ## Ancien calendrier (12 semaines, clos)
 
