@@ -57,6 +57,60 @@ export function waterMaterial(color) {
   return m;
 }
 
+/* Relief et neige : grain de roche, strates, reflets de neige calculés au pixel
+   (donne de la matière de près sans aucune texture à télécharger) */
+const NOISE_GLSL = `
+  float e2sHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+  float e2sNoise(vec2 p) {
+    vec2 i = floor(p); vec2 f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(e2sHash(i), e2sHash(i + vec2(1.0, 0.0)), u.x), mix(e2sHash(i + vec2(0.0, 1.0)), e2sHash(i + vec2(1.0, 1.0)), u.x), u.y);
+  }
+  float e2sFbm(vec2 p) {
+    float s = 0.0; float a = 0.5;
+    for (int i = 0; i < 4; i++) { s += a * e2sNoise(p); p = p * 2.07 + 13.1; a *= 0.5; }
+    return s;
+  }`;
+
+export function terrainMaterial(material) {
+  material.onBeforeCompile = (sh) => {
+    sh.vertexShader = "varying vec3 vWPos;\n" + sh.vertexShader.replace(
+      "#include <begin_vertex>",
+      "#include <begin_vertex>\n vWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;"
+    );
+    sh.fragmentShader = "varying vec3 vWPos;\n" + sh.fragmentShader
+      .replace("#include <common>", "#include <common>\n" + NOISE_GLSL)
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
+        float snowy = smoothstep(0.78, 0.9, min(diffuseColor.r, min(diffuseColor.g, diffuseColor.b)));
+        float grain = e2sFbm(vWPos.xz * 0.55);
+        float strata = e2sNoise(vec2(vWPos.y * 1.8, (vWPos.x + vWPos.z) * 0.08));
+        // Roche et herbe : variations marquées ; neige : à peine un voile
+        diffuseColor.rgb *= mix(0.82 + 0.3 * grain + 0.08 * strata, 0.96 + 0.06 * grain, snowy);`
+      )
+      .replace(
+        "#include <normal_fragment_maps>",
+        `#include <normal_fragment_maps>
+        {
+          float k = 0.35;
+          float h0 = e2sFbm(vWPos.xz * 0.45);
+          float hx = e2sFbm((vWPos.xz + vec2(0.25, 0.0)) * 0.45);
+          float hz = e2sFbm((vWPos.xz + vec2(0.0, 0.25)) * 0.45);
+          vec3 g = vec3(hx - h0, 0.0, hz - h0) * (k / 0.25);
+          normal = normalize(normal - (viewMatrix * vec4(g, 0.0)).xyz);
+        }`
+      )
+      .replace(
+        "#include <roughnessmap_fragment>",
+        `#include <roughnessmap_fragment>
+        float snowR = smoothstep(0.78, 0.9, min(vColor.r, min(vColor.g, vColor.b)));
+        roughnessFactor = mix(roughnessFactor, 0.55, snowR);`
+      );
+  };
+  material.customProgramCacheKey = () => "terrain";
+  return material;
+}
+
 /* Éclairage d'ambiance tiré du ciel (reflets doux sur l'eau, le métal, les toits) */
 export function skyEnvironment(renderer, sky) {
   const pm = new THREE.PMREMGenerator(renderer);
@@ -74,9 +128,9 @@ const TiltShift = {
   uniforms: {
     tDiffuse: { value: null },
     dir: { value: new THREE.Vector2(1, 0) },
-    amount: { value: 2.2 },
+    amount: { value: 1.3 },
     focus: { value: 0.45 },
-    band: { value: 0.24 },
+    band: { value: 0.3 },
   },
   vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
   fragmentShader: `
@@ -98,7 +152,7 @@ const TiltShift = {
 
 /* Étalonnage : un peu plus de relief dans les couleurs, vignette douce */
 const Grade = {
-  uniforms: { tDiffuse: { value: null }, saturation: { value: 1.04 }, vignette: { value: 0.14 } },
+  uniforms: { tDiffuse: { value: null }, saturation: { value: 1.03 }, vignette: { value: 0.16 } },
   vertexShader: TiltShift.vertexShader,
   fragmentShader: `
     uniform sampler2D tDiffuse; uniform float saturation; uniform float vignette;
@@ -131,7 +185,7 @@ export function createPost(renderer, scene, camera, quality) {
     ao.blendIntensity = 0.9;
     composer.addPass(ao);
   }
-  const bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.28, 0.55, 1.0);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.22, 0.6, 1.05); // éclat du soleil sur la neige
   composer.addPass(bloom);
   const tiltH = new ShaderPass(TiltShift);
   const tiltV = new ShaderPass(TiltShift);
