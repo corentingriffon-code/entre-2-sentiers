@@ -5,6 +5,7 @@
    ========================================================= */
 
 import * as THREE from "../vendor/three.module.js";
+import { addWind, waterMaterial, skyEnvironment, createPost, windTime } from "./look.js";
 
 const COLORS = {
   skyTop: 0xbfd0cf,
@@ -16,9 +17,9 @@ const COLORS = {
   snow: 0xf6f3ec,
   trail: 0xdccaa2,
   trailEdge: 0xb5a07a,
-  trailDone: 0x8ea05a,
-  trailDoneEdge: 0x5d7a1c,
-  water: 0x9db8b6,
+  trailDone: 0xa2b26b,
+  trailDoneEdge: 0x6f8538,
+  water: 0x7fa7a8,
 };
 
 const STATE_STYLE = {
@@ -28,6 +29,8 @@ const STATE_STYLE = {
   redaction: { cairn: 0xb3ab98 },
   idee: { orb: 0xfdfbf5 },
 };
+
+const SUN_DIR = new THREE.Vector3(70, 62, 40).normalize();
 
 const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.9, metalness: 0, ...extra });
 
@@ -91,11 +94,11 @@ function heightAt(x, z) {
 }
 
 const C = {
-  meadowLow: new THREE.Color(0xb3b98f),
-  meadow: new THREE.Color(0x97a571),
-  meadowDark: new THREE.Color(0x7f8f5e),
-  rock: new THREE.Color(0x9a958a),
-  rockDark: new THREE.Color(0x7f7b71),
+  meadowLow: new THREE.Color(0xb3bd8c),
+  meadow: new THREE.Color(0x8fa463),
+  meadowDark: new THREE.Color(0x748c4f),
+  rock: new THREE.Color(0xa29b8f),
+  rockDark: new THREE.Color(0x7c776d),
   snow: new THREE.Color(COLORS.snow),
   sand: new THREE.Color(0xd8cdb2),
 };
@@ -127,6 +130,10 @@ function buildTerrain() {
     c.lerp(C.snow, snowAmt);
     // Berge du lac
     c.lerp(C.sand, smooth(0.2, -0.6, h - LAKE.level) * 0.7);
+    // Creux plus sombres, crêtes plus claires (relief lisible, comme une occlusion peinte)
+    const around = (heightAt(x + 2.5, z) + heightAt(x - 2.5, z) + heightAt(x, z + 2.5) + heightAt(x, z - 2.5)) / 4;
+    const cav = THREE.MathUtils.clamp((around - h) * 0.35, -0.12, 0.18);
+    c.multiplyScalar(1 - cav);
     colors.set([c.r, c.g, c.b], i * 3);
   }
   geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
@@ -136,10 +143,7 @@ function buildTerrain() {
 }
 
 function buildLake() {
-  const lake = new THREE.Mesh(
-    new THREE.CircleGeometry(LAKE.r * 1.6, 48),
-    mat(COLORS.water, { roughness: 0.25, metalness: 0.1, transparent: true, opacity: 0.92 })
-  );
+  const lake = new THREE.Mesh(new THREE.CircleGeometry(LAKE.r * 1.6, 64), waterMaterial(COLORS.water));
   lake.rotation.x = -Math.PI / 2;
   lake.position.set(LAKE.x, LAKE.level, LAKE.z);
   lake.receiveShadow = true;
@@ -155,9 +159,19 @@ function buildSky() {
     uniforms: {
       top: { value: new THREE.Color(COLORS.skyTop) },
       horizon: { value: new THREE.Color(COLORS.horizon) },
+      sunDir: { value: SUN_DIR },
     },
     vertexShader: "varying vec3 vPos; void main(){ vPos = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
-    fragmentShader: "uniform vec3 top; uniform vec3 horizon; varying vec3 vPos; void main(){ float t = smoothstep(-0.02, 0.55, vPos.y); gl_FragColor = vec4(mix(horizon, top, t), 1.0);\n#include <colorspace_fragment>\n}",
+    fragmentShader: `uniform vec3 top; uniform vec3 horizon; uniform vec3 sunDir; varying vec3 vPos;
+      void main(){
+        float t = smoothstep(-0.02, 0.55, vPos.y);
+        vec3 col = mix(horizon, top, t);
+        float s = max(dot(normalize(vPos), sunDir), 0.0);
+        col += vec3(1.0, 0.86, 0.62) * (pow(s, 8.0) * 0.22 + pow(s, 64.0) * 0.35);
+        col = mix(col, horizon * 1.03, smoothstep(0.12, -0.02, vPos.y) * 0.6);
+        gl_FragColor = vec4(col, 1.0);
+        #include <colorspace_fragment>
+      }`,
   });
   const sky = new THREE.Mesh(geo, material);
   sky.renderOrder = -1;
@@ -260,7 +274,7 @@ function buildForest(curve, avoid = []) {
   const layers = tiers.map(([r, h, y]) => {
     const g = new THREE.ConeGeometry(r, h, 18, 1);
     g.translate(0, y, 0);
-    const m = new THREE.InstancedMesh(g, mat(0xffffff, { roughness: 0.85 }), spots.length);
+    const m = new THREE.InstancedMesh(g, addWind(mat(0xffffff, { roughness: 0.82 }), 0.035), spots.length);
     m.castShadow = true;
     m.receiveShadow = true;
     return m;
@@ -269,8 +283,8 @@ function buildForest(curve, avoid = []) {
   const q = new THREE.Quaternion();
   const s = new THREE.Vector3();
   const c = new THREE.Color();
-  const dark = new THREE.Color(0x3f5236);
-  const light = new THREE.Color(0x667a49);
+  const dark = new THREE.Color(0x34502f);
+  const light = new THREE.Color(0x6a8547);
   spots.forEach((sp, i) => {
     s.set(sp.k, sp.k * (0.95 + sp.tint * 0.35), sp.k);
     m4.compose(new THREE.Vector3(sp.x, sp.h - 0.15, sp.z), q, s);
@@ -278,7 +292,7 @@ function buildForest(curve, avoid = []) {
     c.copy(dark).lerp(light, sp.tint);
     layers.forEach((l, j) => {
       l.setMatrixAt(i, m4);
-      l.setColorAt(i, c.clone().offsetHSL(0, 0, j * 0.025));
+      l.setColorAt(i, c.clone().offsetHSL(0, 0.02, j * 0.035));
     });
   });
   trunk.castShadow = true;
@@ -294,12 +308,12 @@ function buildForest(curve, avoid = []) {
     if (!farFromTrail(trailPts, x, z, 12) || !clear(x, z)) continue;
     bushSpots.push({ x, z, h, k: 0.5 + rnd() * 0.6 });
   }
-  const bush = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 20, 14), mat(0xffffff), bushSpots.length);
+  const bush = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 20, 14), addWind(mat(0xffffff, { roughness: 0.85 }), 0.025), bushSpots.length);
   bushSpots.forEach((b, i) => {
     s.set(b.k * 1.3, b.k, b.k * 1.3);
     m4.compose(new THREE.Vector3(b.x, b.h + b.k * 0.4, b.z), q, s);
     bush.setMatrixAt(i, m4);
-    bush.setColorAt(i, c.set(0x8c9d5c).offsetHSL(0, 0, (i % 5) * 0.015));
+    bush.setColorAt(i, c.set(0x86a055).offsetHSL(0, 0, (i % 5) * 0.018 - 0.03));
   });
   bush.castShadow = true;
   group.add(bush);
@@ -328,7 +342,7 @@ function buildForest(curve, avoid = []) {
 
 function buildClouds() {
   const group = new THREE.Group();
-  const material = mat(0xffffff, { roughness: 1, emissive: 0xffffff, emissiveIntensity: 0.35 });
+  const material = mat(0xffffff, { roughness: 1, emissive: 0xfff6ea, emissiveIntensity: 0.45, transparent: true, opacity: 0.94 });
   const geo = new THREE.SphereGeometry(1, 24, 16);
   for (let i = 0; i < 8; i++) {
     const cloud = new THREE.Group();
@@ -525,7 +539,7 @@ function buildHouse(id) {
   const wood = mat(0x9a7652);
   const roofM = mat(0x3f4c38);
   const white = mat(0xf4efe4);
-  const glow = mat(0xf3d68a, { emissive: 0xf3c25a, emissiveIntensity: 0.6 });
+  const glow = mat(0xf3d68a, { emissive: 0xffb84a, emissiveIntensity: 2.2 });
   const dark = mat(COLORS.dark);
   if (id === "planning") {
     const body = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.1, 2.6), wood);
@@ -610,29 +624,33 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, small ? 1.5 : 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.VSMShadowMap;
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = 1.02;
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(COLORS.horizon);
   scene.fog = new THREE.Fog(COLORS.horizon, 150, 420);
-  scene.add(buildSky());
+  const sky = buildSky();
+  scene.add(sky);
+  scene.environment = skyEnvironment(renderer, sky);
+  scene.environmentIntensity = 0.55;
 
   const camera = new THREE.PerspectiveCamera(40, 1, 0.5, 1600);
 
-  scene.add(new THREE.HemisphereLight(0xfff7e6, 0x7c8466, 1.5));
-  scene.add(new THREE.AmbientLight(0xffffff, 0.25));
-  const sun = new THREE.DirectionalLight(0xfff0d4, 2.4);
-  sun.position.set(70, 95, 45);
+  scene.add(new THREE.HemisphereLight(0xf4f1e6, 0x6f7a55, 1.05));
+  const sun = new THREE.DirectionalLight(0xffedd6, 2.8);
+  sun.position.copy(SUN_DIR).multiplyScalar(130);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
+  sun.shadow.mapSize.set(small ? 1024 : 4096, small ? 1024 : 4096);
   Object.assign(sun.shadow.camera, { left: -120, right: 120, top: 120, bottom: -120, near: 10, far: 300 });
   sun.shadow.camera.updateProjectionMatrix();
-  sun.shadow.radius = 6;
+  sun.shadow.radius = 5;
   sun.shadow.blurSamples = 16;
   sun.shadow.bias = -0.0005;
   scene.add(sun);
 
-  const base = new THREE.Mesh(new THREE.CircleGeometry(900, 64), mat(0xb3b98f));
+  const base = new THREE.Mesh(new THREE.CircleGeometry(900, 64), mat(0xb3bd8c));
   base.rotation.x = -Math.PI / 2;
   base.position.y = -0.6;
   scene.add(base);
@@ -640,6 +658,7 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
   const terrain = buildTerrain();
   scene.add(terrain);
   scene.add(buildLake());
+  scene.add(groundRing(LAKE.x, LAKE.z, LAKE.r * 1.52, LAKE.r * 1.66, 0xffffff, 0.35));
   const curve = buildTrailCurve();
   const stations = stationSpots(curve);
   const avoid = [];
@@ -665,8 +684,8 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
   scene.add(buildForest(curve, avoid));
   const stationRings = [];
   stations.forEach((st) => {
-    const ring = groundRing(st.x, st.z, 3.1, 3.6, COLORS.lime, 0.95);
-    const fill = groundRing(st.x, st.z, 0, 3.1, 0xffffff, 0.28);
+    const ring = groundRing(st.x, st.z, 3.15, 3.5, COLORS.lime, 0.95);
+    const fill = groundRing(st.x, st.z, 0, 3.15, 0xe9dfc4, 0.7);
     scene.add(ring, fill);
     stationRings.push(ring);
     let top = st.y + 5;
@@ -997,8 +1016,8 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
     trailGroup.add(ribbon(curve, 0, 1, 2.1, COLORS.trailEdge, 0.12, 1));
     trailGroup.add(ribbon(curve, 0, 1, 1.5, COLORS.trail, 0.16, 2));
     if (tAv > 0.02) {
-      trailGroup.add(ribbon(curve, 0, tAv, 2.3, COLORS.trailDoneEdge, 0.2, 3));
-      trailGroup.add(ribbon(curve, 0, tAv, 1.6, COLORS.trailDone, 0.24, 4));
+      trailGroup.add(ribbon(curve, 0, tAv, 1.9, COLORS.trailDoneEdge, 0.2, 3));
+      trailGroup.add(ribbon(curve, 0, tAv, 1.35, COLORS.trailDone, 0.24, 4));
     }
     scene.add(trailGroup);
   }
@@ -1035,6 +1054,7 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
     const w = container.clientWidth || window.innerWidth;
     const h = container.clientHeight || window.innerHeight;
     renderer.setSize(w, h, false);
+    post?.setSize(w, h);
     camera.aspect = w / h;
     // Sur grand écran, la colonne de droite masque une partie de la vue : on recentre la scène à gauche
     if (w > 1080) camera.setViewOffset(w, h, 170, 0, w, h);
@@ -1042,7 +1062,15 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
     camera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resize);
+
+  /* Qualité : occlusion ambiante sur ordinateur, allégée si l'image ralentit */
+  const coarse = window.matchMedia("(pointer: coarse)").matches;
+  let quality = small || coarse ? "medium" : "high";
+  let post = null;
+  try { post = createPost(renderer, scene, camera, quality); } catch (e) { post = null; }
   resize();
+  let perfFrames = 0;
+  let perfTime = 0;
   sph.radius = sphGoal.radius = overviewRadius();
 
   const fw = new THREE.Vector3();
@@ -1054,8 +1082,20 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
     if (!running) return;
     requestAnimationFrame(frame);
     timer.update();
-    const dt = Math.min(timer.getDelta(), 0.05);
+    const rawDt = timer.getDelta();
+    const dt = Math.min(rawDt, 0.05);
     const time = timer.getElapsed();
+    if (!reducedMotion) windTime.value = time;
+    // Mesure sur quelques secondes : si l'image est lente, on retire l'occlusion, puis les effets
+    if (post && time > 2 && perfFrames < 120) {
+      perfFrames++;
+      perfTime += rawDt;
+      if (perfFrames === 120) {
+        const avg = perfTime / 120;
+        if (avg > 0.034 && !post.dropAO()) post = null;
+        else if (avg > 0.034) { perfFrames = 0; perfTime = 0; }
+      }
+    }
 
     const idle = performance.now() - lastInteraction > 6000;
     if (idle && !reducedMotion) sphGoal.theta += dt * 0.04;
@@ -1175,7 +1215,8 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
       }
     }
 
-    renderer.render(scene, camera);
+    if (post) post.render();
+    else renderer.render(scene, camera);
     updatePins();
   }
   frame();
