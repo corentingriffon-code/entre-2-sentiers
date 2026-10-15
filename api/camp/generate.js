@@ -43,15 +43,36 @@ const ARTICLE_RULES = `Rédige un article de blog complet à partir du brouillon
 - "slug" : l'adresse de l'article, en minuscules sans accents, mots séparés par des tirets, 3 à 8 mots.
 - "sources" : une par ligne au format "Titre | https://lien", uniquement des liens présents dans le brouillon ou les notes ; chaîne vide sinon.`;
 
-const LINKEDIN_RULES = `Rédige un post LinkedIn à partir de la matière fournie.
+const LINKEDIN_RULES = `Rédige un post LinkedIn à partir de cette matière, dans le style de mon post modèle ci-dessous.
 
-- Entre 900 et 1800 caractères, 3000 au grand maximum.
-- La première ligne doit donner envie de cliquer sur « voir plus » : une affirmation forte ou une question, sans emoji au début.
-- Des paragraphes très courts (1 à 3 lignes) séparés par une ligne vide. Texte brut : pas de Markdown, pas de gras, pas de titres.
-- Au plus 2 ou 3 emojis sobres dans tout le post, aucun si ce n'est pas utile.
-- Termine par une question ouverte pour lancer la discussion.
-- Si un lien d'article est fourni, invite à lire l'article complet avec ce lien sur sa propre ligne, juste avant la question finale.
-- Ajoute 3 à 5 hashtags pertinents sur la toute dernière ligne.`;
+- Entre 700 et 1300 caractères environ.
+- Une première ligne courte et affirmative qui bouscule une idée reçue, puis une deuxième ligne qui la retourne.
+- Des paragraphes très courts (1 à 3 lignes) séparés par une ligne vide. Texte brut : pas de Markdown, pas de gras, pas de titres, pas de hashtags.
+- Un ou deux faits concrets tirés du brouillon ou de l'article, puis une phrase-choc qui résume l'idée en une ligne.
+- 2 ou 3 emojis au plus, placés en fin de ligne, jamais au début du post.
+- Avant-dernier paragraphe : « J'ai regardé… » ou équivalent, qui présente ce que l'article explore.
+- Dernière ligne : « Retrouvez le lien de l'article dans les commentaires 👇 » (le lien n'est pas dans le post, je le mets en commentaire).
+
+Mon post modèle, qui a très bien marché : inspire-toi de sa structure, de son accroche, de son rythme, de sa longueur et de son ton, sans recopier ses phrases ni son sujet.
+<post_modele>
+Decathlon n’est plus le magasin du pas cher.
+
+C’est devenu celui de la performance accessible à tous.
+
+Le détail qui résume cette transformation : la marque a arrêté de dire “athlète”. Elle dit “expert”.
+
+Quand la marque Kiprun a signé le coureur Paul Chelimo, elle ne l’a pas présenté comme un sprinteur sponsorisé, mais comme un expert du running. 🏃‍♂️‍➡️
+
+Et en avril dernier, elle a signé Mathieu Blanchard, vainqueur de la Diagonale des Fous, qui quitte Salomon après neuf ans. Pas seulement pour qu’il porte les chaussures. Il est aussi ingénieur de formation, et va participer à leur conception.
+
+Un athlète porte un produit. Un expert le pense avec vous.
+
+J’ai regardé comment Decathlon construit cette nouvelle image, entre nouveau logo, signatures retentissantes (Griezmann, @Alex Sarr) et ce choix de vocabulaire qui change tout.  🧠
+
+Retrouvez le lien de l'article dans les commentaires  👇
+</post_modele>
+
+Le post va dans le champ "post".`;
 
 const SCHEMAS = {
   article: {
@@ -81,9 +102,6 @@ function material(b) {
   if (b.pillar) parts.push(`<thematique>${b.pillar}</thematique>`);
   if (b.draft) parts.push(`<brouillon>\n${b.draft}\n</brouillon>`);
   if (b.notes) parts.push(`<notes>\n${b.notes}\n</notes>`);
-  if (b.mode === "linkedin" && b.linkedinModel) {
-    parts.push(`Voici un de mes posts LinkedIn qui a très bien marché. Inspire-toi de sa structure, de son accroche, de son rythme, de sa longueur, de sa mise en page et de son ton (emojis et hashtags compris). Ne recopie ni ses phrases ni son sujet. Sur la forme (emojis, longueur, hashtags, mise en page), ce post modèle l'emporte sur les consignes ci-dessus.\n<post_modele>\n${b.linkedinModel}\n</post_modele>`);
-  }
   const a = b.article || {};
   if (b.mode === "linkedin" && a.body) {
     parts.push(`<article_publie_ou_prevu>\n${a.excerpt ? `Chapô : ${a.excerpt}\n\n` : ""}${a.body}\n</article_publie_ou_prevu>`);
@@ -112,7 +130,6 @@ module.exports = async (req, res) => {
     pillar: clip(b.pillar, 60),
     draft: clip(b.draft, 60000),
     notes: clip(b.notes, 20000),
-    linkedinModel: clip(b.linkedinModel, 6000),
     article: { excerpt: clip(b.article?.excerpt, 600), body: clip(b.article?.body, 60000), url: clip(b.article?.url, 300) },
   };
   if (!input.draft.trim() && !input.article.body.trim()) {
