@@ -302,7 +302,7 @@ function renderPlanning() {
   const days = [];
   for (let d = start; d <= end; d = addDays(d, 1)) days.push(d);
 
-  const toPlan = state.contents.filter((c) => (c.status === "pret" || c.status === "redaction") && !pubsOf(c.id).some((p) => p.status === "prevu"));
+  const toPlan = state.contents.filter((c) => (c.status === "pret" || c.status === "redaction") && !pubsOf(c.id).some((p) => p.status === "prevu" && p.date));
 
   $("#panel").innerHTML = `
     <div class="panel-head">
@@ -327,7 +327,7 @@ function renderPlanning() {
             ${ps.map((p) => {
               const c = contentById(p.contentId);
               const late = p.status === "prevu" && p.date < t;
-              return `<button type="button" class="pub-chip ${p.status === "publie" ? "is-done" : ""} ${late ? "is-late" : ""}" draggable="true" data-pub="${p.id}" data-open="${p.contentId}" style="--net:${NETWORKS[p.network].color}" title="${esc(c?.title)} · ${NETWORKS[p.network].label}${p.status === "publie" ? " · publié" : ""}">
+              return `<button type="button" class="pub-chip ${p.status === "publie" ? "is-done" : ""} ${late ? "is-late" : ""}" draggable="true" data-pub="${p.id}" data-open="${p.contentId}" data-focuspub="${p.id}" style="--net:${NETWORKS[p.network].color}" title="${esc(c?.title)} · ${NETWORKS[p.network].label}${p.status === "publie" ? " · publié" : ""}">
                 <span class="pub-net">${NETWORKS[p.network].short}</span><span class="pub-title">${esc(c?.title || "Sans titre")}</span>
               </button>`;
             }).join("")}
@@ -966,7 +966,7 @@ let draft = null;
 function pubRowHTML(p, i) {
   const net = NETWORKS[p.network];
   const statsOpen = p.status === "publie";
-  return `<fieldset class="pub-row ${p.status === "publie" ? "is-done" : ""}" data-i="${i}" id="pubrow-${p.id}" style="--net:${net.color}">
+  return `<fieldset class="pub-row ${p.status === "publie" ? "is-done" : ""} ${draft?.focusPub === p.id ? "is-focus" : ""}" data-i="${i}" id="pubrow-${p.id}" style="--net:${net.color}">
     <legend><span class="net-chip" style="--net:${net.color}">${net.label}</span></legend>
     <div class="pub-grid">
       <label>Date<input class="input" type="date" name="date" value="${esc(p.date)}"></label>
@@ -982,9 +982,12 @@ function pubRowHTML(p, i) {
         : `<label class="span-2">Lien<input class="input" type="url" name="url" value="${esc(p.url)}" placeholder="https://… (le lien du post une fois publié)"></label>`}
     </div>
     ${SOCIALS.includes(p.network) ? postTextHTML(p, i) : ""}
-    ${p.network === "site"
-      ? (p.status === "prevu" ? `<button type="button" class="btn btn-primary btn-sm" data-gotoarticle>✍️ Écrire et publier l'article</button>` : "")
-      : p.status === "prevu" ? `<button type="button" class="btn btn-primary btn-sm" data-publish="${i}">Marquer publié <span class="xp-pill">+${XP.pubPublished - XP.pubPlanned}</span></button>` : ""}
+    ${p.status === "prevu" ? `<div class="pub-actions">
+      ${p.network === "site"
+        ? `<button type="button" class="btn btn-primary btn-sm" data-gotoarticle>✍️ Écrire et publier l'article</button>`
+        : `<button type="button" class="btn btn-primary btn-sm" data-publish="${i}">Marquer publié <span class="xp-pill">+${XP.pubPublished - XP.pubPlanned}</span></button>`}
+      ${p.date ? `<button type="button" class="btn btn-ghost btn-sm" data-unplan="${i}" title="Retirer la date : la publication sort du planning, mais reste dans le contenu (avec son texte)">📅 Déprogrammer</button>` : ""}
+    </div>` : ""}
     <details class="pub-stats" ${statsOpen ? "open" : ""}>
       <summary>Statistiques ${hasStats(p) ? `<span class="muted">relevées le ${fmtDate(p.statsAt)}</span>` : `<span class="xp-pill">+${XP.stats}</span>`}</summary>
       <div class="stats-inputs">
@@ -1030,12 +1033,6 @@ function renderEditor() {
         <button type="button" class="btn btn-gen" data-gen="article">✨ Générer un article</button>
         <button type="button" class="btn btn-gen" data-gen="linkedin">✨ Générer un post LinkedIn</button>
         <span id="gen-note">${genNoteHTML()}</span>
-        <details class="gen-model" ${state.settings.linkedinModel ? "" : "open"}>
-          <summary>Post LinkedIn modèle ${state.settings.linkedinModel ? `<span class="muted small">enregistré · ${fmt(state.settings.linkedinModel.length)} caractères</span>` : `<span class="muted small">à remplir une fois</span>`}</summary>
-          <label><span class="muted small">Colle ici le texte d'un de tes posts qui a bien marché : Claude s'en inspire (accroche, rythme, longueur, ton) pour chaque nouveau post, sans le recopier.</span>
-            <textarea class="input" name="li-model" rows="6" placeholder="Le texte complet de ton post LinkedIn…">${esc(state.settings.linkedinModel || "")}</textarea>
-          </label>
-        </details>
       </div>
       <label>Notes (sources, angle, visuels…)
         <textarea class="input" name="notes" rows="3">${esc(c.notes)}</textarea>
@@ -1109,7 +1106,6 @@ function genInput(c) {
     pillar: PILLARS[c.pillar] || "",
     draft: c.text,
     notes: c.notes,
-    linkedinModel: state.settings.linkedinModel || "",
     article: c.kind === "article" ? { excerpt: a.excerpt || "", body: a.body || "", url: slug ? ARTICLE_URL + slug : "" } : {},
   };
 }
@@ -1550,18 +1546,25 @@ function openEditor(contentId, { date = "", focusPub = null } = {}) {
     pubs: existing ? structuredClone(pubsOf(existing.id)) : [],
     original: existing ? structuredClone(pubsOf(existing.id)) : [],
   };
-  if (date) draft.pubs.push(newPub(content.kind === "article" ? "site" : "linkedin", date));
+  if (date) {
+    const undated = draft.pubs.filter((p) => p.status === "prevu" && !p.date);
+    if (undated.length) undated.forEach((p) => { p.date = date; p.plannedAt = today(); });
+    else draft.pubs.push(newPub(content.kind === "article" ? "site" : "linkedin", date));
+  }
   renderEditor();
   tooltip.hidden = true;
   editor.showModal();
   if (!genConfig) loadGenConfig().then(() => { const el = $("#gen-note"); if (el) el.innerHTML = genNoteHTML(); });
   if (content.kind === "article" && !publishConfig) loadPublishConfig().then(() => draft && draft.content.id === content.id && (readEditorForm(), renderEditor()));
   if (focusPub) {
+    draft.focusPub = focusPub;
+    $(`#pubrow-${focusPub}`)?.classList.add("is-focus");
     const row = $(`#pubrow-${focusPub}`);
     if (row) {
-      row.querySelector("details")?.setAttribute("open", "");
+      const p = draft.pubs[Number(row.dataset.i)];
+      if (p?.status === "publie") row.querySelector("details")?.setAttribute("open", "");
       row.scrollIntoView({ block: "center" });
-      row.querySelector('[name="stat-impressions"]')?.focus();
+      if (p?.status === "publie") row.querySelector('[name="stat-impressions"]')?.focus();
     }
   } else if (!existing) {
     $("#editor-title").focus();
@@ -1642,6 +1645,15 @@ editor.addEventListener("click", (e) => {
     readEditorForm();
     draft.pubs.splice(Number(tgt.dataset.delpub), 1);
     renderEditor();
+  } else if (tgt.dataset.unplan != null) {
+    readEditorForm();
+    const p = draft.pubs[Number(tgt.dataset.unplan)];
+    if (!p) return;
+    const label = NETWORKS[p.network].label;
+    p.date = "";
+    p.time = "";
+    renderEditor(); // le formulaire doit refléter la date effacée avant l'enregistrement
+    if (commitEditor()) toast(`Publication ${label} déprogrammée : elle n'apparaît plus dans le planning. Tu la retrouves dans « À programmer ».`);
   } else if (tgt.dataset.publish != null) {
     readEditorForm();
     const p = draft.pubs[Number(tgt.dataset.publish)];
@@ -1706,14 +1718,6 @@ editor.addEventListener("input", (e) => {
   }
 });
 editor.addEventListener("change", async (e) => {
-  if (e.target.name === "li-model") {
-    const v = e.target.value.trim();
-    if (v) state.settings.linkedinModel = v;
-    else delete state.settings.linkedinModel;
-    save();
-    toast(v ? "Post modèle enregistré : les prochains posts LinkedIn s'en inspireront." : "Post modèle retiré.");
-    return;
-  }
   if (!draft) return;
   if (e.target.name === "kind") {
     readEditorForm();

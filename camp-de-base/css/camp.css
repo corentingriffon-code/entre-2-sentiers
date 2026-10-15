@@ -770,6 +770,5 @@ body:not([data-screen="sentier"]) .keys-hint { display: none; }
 .post-text { display: grid; gap: 6px; width: 100%; }
 .post-text textarea { width: 100%; font-size: 0.92rem; font-weight: 400; line-height: 1.5; resize: vertical; }
 .post-text-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.gen-model { flex-basis: 100%; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.5); padding: 8px 12px; }
-.gen-model > summary { cursor: pointer; font-weight: 700; font-size: 0.84rem; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-.gen-model[open] > summary { margin-bottom: 10px; }
+.pub-row.is-focus { box-shadow: 0 0 0 3px rgba(159, 175, 107, 0.55); }
+.pub-actions { display: flex; flex-wrap: wrap; gap: 8px; }

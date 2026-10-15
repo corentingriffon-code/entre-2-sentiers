@@ -144,7 +144,7 @@ Ensuite :
 - l'article se range dans « Rédaction de l'article » (texte, chapô, adresse, question de fin). La ligne **Site** s'ouvre pour choisir la date et l'heure ;
 - le post se range dans la ligne **LinkedIn** (zone « Texte du post », compteur sur 3 000 caractères, bouton « Copier le texte »), avec sa date et son heure. Si l'article existe déjà, le post s'appuie dessus et met son lien.
 
-**Post LinkedIn modèle** : sous les boutons, colle une fois le texte d'un de tes posts qui a bien marché. Il est enregistré (et synchronisé), et chaque demande de post LinkedIn le donne à Claude comme exemple de style (accroche, rythme, longueur, ton), sans qu'il le recopie.
+**Style des posts LinkedIn** : les demandes de post incluent ton post Decathlon comme modèle (accroche, rythme, longueur, emojis en fin de ligne, « Retrouvez le lien de l'article dans les commentaires 👇 », pas de hashtags). Pour changer de modèle, il faut modifier `LINKEDIN_RULES` dans `camp-de-base/js/prompts.js` (et `api/camp/generate.js`).
 
 Claude ne publie rien tout seul : tu relis, tu ajustes, puis tu publies comme d'habitude. Il a pour consigne de ne rien inventer (chiffres, citations, noms) qui ne soit pas dans ton brouillon ou tes notes. Relis quand même les faits.
 

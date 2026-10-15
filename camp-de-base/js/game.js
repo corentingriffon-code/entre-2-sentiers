@@ -204,7 +204,7 @@ export function nextMission(state) {
   if (noStats.length) return { text: `Relever les stats de « ${title(noStats[0])} » (${NETWORKS[noStats[0].network].label})`, contentId: noStats[0].contentId, xp: XP.stats };
 
   const soon = state.pubs.filter((p) => p.status === "prevu" && p.date >= t && p.date <= addDays(t, 7));
-  const ready = state.contents.filter((c) => c.status === "pret" && !state.pubs.some((p) => p.contentId === c.id && p.status === "prevu"));
+  const ready = state.contents.filter((c) => c.status === "pret" && !state.pubs.some((p) => p.contentId === c.id && p.status === "prevu" && p.date));
   if (soon.length < 2 && ready.length) return { text: `Programmer « ${ready[0].title} » dans le calendrier`, contentId: ready[0].id, xp: XP.pubPlanned };
 
   const drafting = state.contents.find((c) => c.status === "redaction");
