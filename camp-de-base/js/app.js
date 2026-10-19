@@ -44,6 +44,21 @@ function load() {
 let state = load();
 let storageOk = true;
 
+/* Copie de sécurité dans ce navigateur : l'état de la veille, gardé une journée */
+const BACKUP_KEY = STORE_KEY + ":backup";
+try {
+  const info = JSON.parse(localStorage.getItem(BACKUP_KEY + "-info") || "{}");
+  const raw = localStorage.getItem(STORE_KEY);
+  if (raw && info.day !== today()) {
+    try {
+      localStorage.setItem(BACKUP_KEY, raw);
+      localStorage.setItem(BACKUP_KEY + "-info", JSON.stringify({ day: today(), at: new Date().toISOString() }));
+    } catch (e) {
+      localStorage.removeItem(BACKUP_KEY); // pas assez de place : la copie en ligne prend le relais
+    }
+  }
+} catch (e) { /* stockage indisponible */ }
+
 /* Suppressions mémorisées : ce qui disparaît ici ne doit pas revenir depuis un autre appareil */
 const idSets = (s) => Object.fromEntries(ARRAYS.map((k) => [k, new Set((s[k] || []).map((x) => x.id))]));
 let lastIds = idSets(state);
@@ -1978,6 +1993,8 @@ menu.addEventListener("click", (e) => {
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   } else if (a === "import-articles") {
     runArticleImport({ manual: true });
+  } else if (a === "restore") {
+    restoreBackup();
   } else if (a === "reset") {
     if (confirm("Effacer toutes tes modifications et repartir des données de départ ? Exporte d'abord une sauvegarde si besoin.")) {
       state = seedState();
@@ -1989,6 +2006,48 @@ menu.addEventListener("click", (e) => {
     }
   }
 });
+/* Remplace toutes les données par une sauvegarde (l'état actuel est gardé de côté pour annuler) */
+function applyBackup(data) {
+  try { localStorage.setItem(STORE_KEY + ":before-restore", JSON.stringify(state)); } catch (e) { /* pas de place */ }
+  state = normalizeState(structuredClone(data));
+  if (!Array.isArray(state.seenBadges)) state.seenBadges = badges(state).filter((b) => b.unlocked).map((b) => b.id);
+  lastXP = computeXP(state);
+  lastLevel = levelFor(lastXP).index;
+  save();
+  renderAll();
+}
+
+async function restoreBackup() {
+  const options = [];
+  try {
+    const info = JSON.parse(localStorage.getItem(BACKUP_KEY + "-info") || "{}");
+    if (localStorage.getItem(BACKUP_KEY)) options.push({ label: `Copie de cet appareil, faite le ${fmtDate(info.day)}`, load: async () => JSON.parse(localStorage.getItem(BACKUP_KEY)) });
+    if (localStorage.getItem(STORE_KEY + ":before-restore")) options.push({ label: "Annuler la dernière restauration", load: async () => JSON.parse(localStorage.getItem(STORE_KEY + ":before-restore")) });
+  } catch (e) { /* rien */ }
+  const code = getPublishCode();
+  const get = async (q) => {
+    const r = await fetch(`/api/camp/data?${q}`, { headers: { "x-camp-code": code || "" }, cache: "no-store" });
+    return r.json().catch(() => ({}));
+  };
+  if (code) {
+    try {
+      const list = await get("backups=1");
+      (list.versions || []).slice(0, 8).forEach((v) => options.push({ label: `En ligne : version ${v.version}, ${new Date(v.updatedAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}`, load: async () => (await get(`history=${v.version}`)).data }));
+      (list.days || []).forEach((d) => options.push({ label: `En ligne : début de journée du ${fmtDate(d)}`, load: async () => (await get(`backup=${d}`)).data }));
+      if (list.badCode) rememberPublishCode(code, false);
+    } catch (e) { /* hors ligne : seulement les copies locales */ }
+  }
+  if (!options.length) return toast("Aucune sauvegarde disponible pour l'instant (elles se créent au fil des enregistrements).", "warn");
+  const pick = prompt(`Quelle sauvegarde restaurer ? (tape le numéro)\n\n${options.map((o, i) => `${i + 1}. ${o.label}`).join("\n")}`);
+  const opt = options[Number(pick) - 1];
+  if (!opt) return;
+  const data = await opt.load().catch(() => null);
+  if (!data || !Array.isArray(data.contents)) return toast("Cette sauvegarde est illisible.", "warn");
+  if (!confirm(`Restaurer « ${opt.label} » ?\n\n${data.contents.length} contenus, ${(data.tasks || []).length} tâches, ${(data.notes || []).length} notes.\nTes données actuelles seront remplacées (tu pourras annuler avec « Annuler la dernière restauration »).`)) return;
+  applyBackup(data);
+  toast("Sauvegarde restaurée.");
+}
+
 $("#import-file").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
