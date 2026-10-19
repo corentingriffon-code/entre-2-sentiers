@@ -792,3 +792,6 @@ body:not([data-screen="sentier"]) .keys-hint { display: none; }
 .sources-preview { margin-top: -10px; padding: 10px 12px; border-radius: 10px; background: var(--paper-2); font-size: 0.86rem; }
 .sources-preview ul { margin: 4px 0 0; padding-left: 1.1em; display: grid; gap: 3px; }
 .sources-preview a { color: var(--lime-deep); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.publish-msg { flex-basis: 100%; margin: 0; padding: 8px 12px; border-radius: 8px; background: rgba(163, 52, 31, 0.08); color: var(--late); font-size: 0.86rem; font-weight: 600; }
+/* Zone des messages en « popover » : au-dessus des fiches ouvertes */
+.toasts[popover] { inset: auto auto 24px 50%; margin: 0; padding: 0; border: 0; background: transparent; overflow: visible; color: inherit; }
