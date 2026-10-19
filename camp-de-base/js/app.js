@@ -13,7 +13,7 @@ import { syncAll } from "./sync.js";
 import { createCloud, ARRAYS } from "./cloud.js";
 import { importAllArticles } from "./importer.js";
 import { buildPrompt, parseArticle, cleanPost } from "./prompts.js";
-import { buildArticleHTML, slugify, readMinutes, wordCount, resizePhoto, cropPhoto, PILLAR_STYLE } from "./article.js";
+import { buildArticleHTML, slugify, readMinutes, wordCount, resizePhoto, cropPhoto, parseSources, formatSources, PILLAR_STYLE } from "./article.js";
 
 const STORE_KEY = "e2s-camp-de-base-v1";
 const $ = (s, root = document) => root.querySelector(s);
@@ -1237,7 +1237,7 @@ function applyGenerated(mode, result) {
     aa.body = (g.body || "").trim();
     if (g.excerpt?.trim()) aa.excerpt = g.excerpt.trim();
     if (g.question?.trim()) aa.question = g.question.trim();
-    if (g.sources?.trim()) aa.sources = g.sources.trim();
+    if (g.sources?.trim()) aa.sources = formatSources(g.sources);
     if (!aa.publishedAt && !legacyArticle(c) && !c.slug) aa.slug = slugify(g.slug || c.title);
     if (!d.pubs.some((p) => p.network === "site")) d.pubs.unshift(newPub("site", date));
     loadPublishConfig().then(() => draft === d && (readEditorForm(), renderEditor()));
@@ -1384,9 +1384,11 @@ Un paragraphe, avec du **gras**, de l'*italique* et un [lien](https://exemple.co
         <label>Question de fin (facultatif)
           <input class="input" name="a-question" value="${esc(a.question)}" placeholder="Et vous, … ?">
         </label>
-        <label>Sources (une par ligne : Titre | https://lien)
+        <label>Sources (colle-les telles quelles : elles se mettent en forme toutes seules)
           <textarea class="input" name="a-sources" rows="3" placeholder="Le Monde, article sur… | https://www.lemonde.fr/…">${esc(a.sources)}</textarea>
+          <span class="muted small">Formats acceptés : « Nom | lien », « [Nom](lien) », « Nom : lien », titre puis lien à la ligne, ou lien seul.</span>
         </label>
+        <div class="sources-preview" id="sources-preview">${sourcesPreviewHTML(a.sources)}</div>
 
         <div class="article-actions">
           <button type="button" class="btn btn-ghost" data-preview>👁 Aperçu</button>
@@ -1397,6 +1399,13 @@ Un paragraphe, avec du **gras**, de l'*italique* et un [lien](https://exemple.co
           ${cfg && !cfg.configured ? `<p class="sync-missing">Publication pas encore configurée sur Vercel${cfg.missing?.length ? ` : ${cfg.missing.join(", ")}` : ""} (voir CONNEXIONS.md).</p>` : ""}
         </div>
       </details>`;
+}
+
+/* Aperçu des sources telles qu'elles apparaîtront sur le site (liens cliquables) */
+function sourcesPreviewHTML(text) {
+  const list = parseSources(text);
+  if (!list.length) return "";
+  return `<p class="eyebrow">Sur le site</p><ul>${list.map((x) => `<li>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>` : `${esc(x.title)} <span class="sync-missing">(pas de lien)</span>`}</li>`).join("")}</ul>`;
 }
 
 function readArticleForm(f) {
@@ -1794,6 +1803,10 @@ editor.addEventListener("pointerdown", (e) => {
 });
 
 editor.addEventListener("input", (e) => {
+  if (e.target.name === "a-sources") {
+    const out = $("#sources-preview");
+    if (out) out.innerHTML = sourcesPreviewHTML(e.target.value);
+  }
   if (e.target.name === "a-posy") {
     const img = editor.querySelector(".photo-frame img");
     if (img) img.style.objectPosition = `50% ${e.target.value}%`;
@@ -1817,6 +1830,12 @@ editor.addEventListener("input", (e) => {
   }
 });
 editor.addEventListener("change", async (e) => {
+  // En quittant le champ : les sources collées sont remises au format « Nom | lien »
+  if (e.target.name === "a-sources") {
+    const clean = formatSources(e.target.value);
+    if (clean !== e.target.value.trim()) e.target.value = clean;
+    return;
+  }
   if (!draft) return;
   if (e.target.name === "kind") {
     readEditorForm();

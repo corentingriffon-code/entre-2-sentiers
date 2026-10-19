@@ -69,17 +69,57 @@ export function wordCount(text) {
 export const readMinutes = (text) => Math.max(1, Math.round(wordCount(text) / 200));
 
 /* Sources : une par ligne, « Titre | https://lien » ou juste le lien */
+/* Sources : accepte tous les formats qu'on colle depuis Claude ou ailleurs
+   « Titre | lien », « [Titre](lien) », « - Titre : lien », « 1. Titre – lien », « Titre (lien) »,
+   titre sur une ligne et lien sur la suivante, ou lien seul (le nom du site sert alors de titre). */
+const URL_RE = /https?:\/\/[^\s<>"'\])]+[^\s<>"'\]).,;:!?»]/;
+
+function cleanTitle(t) {
+  return t
+    .replace(/^\s*(?:[-*•–—·]|\d+[.)])\s+/, "") // puce ou numéro
+    .replace(/^\s*sources?\s*:\s*/i, "")
+    .replace(/\*\*|__|`/g, "")
+    .replace(/[\s|:–—\-(<,;.]+$/, "")
+    .replace(/^[\s|:–—\-]+/, "")
+    .trim();
+}
+
+function siteName(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ""); } catch (e) { return url; }
+}
+
 export function parseSources(text) {
-  return String(text || "")
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .map((l) => {
-      const parts = l.split("|").map((x) => x.trim());
-      const url = parts.find((p) => /^https?:\/\//.test(p)) || "";
-      const title = parts.filter((p) => p !== url).join(" | ") || url;
-      return { title, url };
-    });
+  const lines = String(text || "").replace(/\r\n/g, "\n").split("\n").map((l) => l.trim()).filter(Boolean);
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^#+\s/.test(line) || /^sources?\s*:?$/i.test(line.replace(/[*_#`]/g, "").trim())) continue; // intitulé « Sources »
+    const md = line.match(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/);
+    if (md) { out.push({ title: cleanTitle(md[1]) || siteName(md[2]), url: md[2] }); continue; }
+    const m = line.match(URL_RE);
+    if (m) {
+      const url = m[0];
+      const title = cleanTitle(line.replace(url, " ").replace(/\(\s*\)|<\s*>/g, " "));
+      out.push({ title: title || siteName(url), url });
+      continue;
+    }
+    // Titre seul : le lien est peut-être sur la ligne suivante
+    const next = lines[i + 1] || "";
+    const nm = next.match(URL_RE);
+    if (nm && !cleanTitle(next.replace(nm[0], " "))) {
+      out.push({ title: cleanTitle(line) || siteName(nm[0]), url: nm[0] });
+      i++;
+      continue;
+    }
+    const title = cleanTitle(line);
+    if (title) out.push({ title, url: "" });
+  }
+  return out;
+}
+
+/* Remet les sources au format du champ : une par ligne, « Titre | lien » */
+export function formatSources(text) {
+  return parseSources(text).map((s) => (s.url ? `${s.title} | ${s.url}` : s.title)).join("\n");
 }
 
 /* Construit le HTML complet de l'article.
