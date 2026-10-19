@@ -643,8 +643,10 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
   }
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const small = Math.min(window.innerWidth, window.innerHeight) < 700;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, small ? 1.5 : 2));
+  // Au-delà de 1,5 la différence ne se voit pas, mais la carte graphique travaille presque deux fois plus
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   renderer.shadowMap.enabled = true;
+  renderer.shadowMap.autoUpdate = false; // ombres recalculées une image sur trois (le décor bouge peu)
   renderer.shadowMap.type = THREE.VSMShadowMap;
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 1.0;
@@ -665,7 +667,7 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
   const sun = new THREE.DirectionalLight(0xfff8ee, 3.3);
   sun.position.copy(SUN_DIR).multiplyScalar(130);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(small ? 1024 : 4096, small ? 1024 : 4096);
+  sun.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
   Object.assign(sun.shadow.camera, { left: -120, right: 120, top: 120, bottom: -120, near: 10, far: 300 });
   sun.shadow.camera.updateProjectionMatrix();
   sun.shadow.radius = 5;
@@ -775,18 +777,21 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
   let itemPins = [];
   const pv = new THREE.Vector3();
   function updatePins() {
-    if (!layer.offsetParent && getComputedStyle(layer).display === "none") return;
+    // Étiquettes masquées hors du sentier : rien à recalculer (et surtout pas de lecture de style à chaque image)
+    if (!active) return;
     const w = el.clientWidth;
     const h = el.clientHeight;
     for (const pin of pins) {
       pv.copy(pin.anchor).project(camera);
       const vis = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05;
-      pin.el.style.visibility = vis ? "visible" : "hidden";
+      if (pin.vis !== vis) { pin.vis = vis; pin.el.style.visibility = vis ? "visible" : "hidden"; }
       if (!vis) continue;
       const d = camera.position.distanceTo(pin.anchor);
       const k = THREE.MathUtils.clamp(110 / d, 0.72, 1.05);
-      pin.el.style.transform = `translate(${((pv.x + 1) / 2) * w}px, ${((1 - pv.y) / 2) * h}px) translate(-50%, -100%) scale(${k.toFixed(3)})`;
-      pin.el.style.zIndex = String(1000 - Math.round(d));
+      const tr = `translate(${(((pv.x + 1) / 2) * w).toFixed(1)}px, ${(((1 - pv.y) / 2) * h).toFixed(1)}px) translate(-50%, -100%) scale(${k.toFixed(3)})`;
+      if (pin.tr !== tr) { pin.tr = tr; pin.el.style.transform = tr; }
+      const z = String(1000 - Math.round(d));
+      if (pin.z !== z) { pin.z = z; pin.el.style.zIndex = z; }
     }
   }
 
@@ -1099,6 +1104,9 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
   resize();
   let perfFrames = 0;
   let perfTime = 0;
+  let perfStep = 0;
+  let lastDraw = 0;
+  let shadowTick = 0;
   sph.radius = sphGoal.radius = overviewRadius();
 
   const fw = new THREE.Vector3();
@@ -1106,24 +1114,37 @@ export function createScene(container, { onSelect, onHover, onStation, onProximi
   const mv = new THREE.Vector3();
   const timer = new THREE.Timer();
   let running = true;
-  function frame() {
+  function frame(now = performance.now()) {
     if (!running) return;
     requestAnimationFrame(frame);
+    // Cadence : pleine vitesse sur le sentier, ralentie quand un panneau ou une fiche couvre la scène
+    const modal = document.querySelector("dialog[open]");
+    const calm = !roam && performance.now() - lastInteraction > 15000;
+    const gap = modal ? 250 : !active ? 100 : calm ? 33 : 0;
+    if (now - lastDraw < gap) return;
+    lastDraw = now;
     timer.update();
     const rawDt = timer.getDelta();
     const dt = Math.min(rawDt, 0.05);
     const time = timer.getElapsed();
     if (!reducedMotion) windTime.value = time;
-    // Mesure sur quelques secondes : si l'image est lente, on retire l'occlusion, puis les effets
-    if (post && !forced && time > 2 && perfFrames < 120) {
+    // Mesure (à pleine cadence seulement) : si l'image est lente, on allège par étapes :
+    // occlusion ambiante, puis résolution, puis effets
+    if (post && !forced && gap === 0 && time > 1.5 && perfStep < 3) {
       perfFrames++;
       perfTime += rawDt;
-      if (perfFrames === 120) {
-        const avg = perfTime / 120;
-        if (avg > 0.034 && !post.dropAO()) post = null;
-        else if (avg > 0.034) { perfFrames = 0; perfTime = 0; }
+      if (perfFrames === 60) {
+        const avg = perfTime / 60;
+        perfFrames = 0;
+        perfTime = 0;
+        if (avg > 0.022) {
+          if (perfStep === 0 && post.dropAO()) perfStep = 1;
+          else if (perfStep <= 1 && renderer.getPixelRatio() > 1) { perfStep = 2; renderer.setPixelRatio(1); post.composer.setPixelRatio(1); resize(); }
+          else { perfStep = 3; post = null; }
+        } else perfStep = 3; // fluide : on arrête de mesurer
       }
     }
+    if (shadowTick++ % 3 === 0) renderer.shadowMap.needsUpdate = true;
 
     const idle = performance.now() - lastInteraction > 6000;
     if (idle && !reducedMotion) sphGoal.theta += dt * 0.04;
