@@ -13,7 +13,7 @@ import { syncAll } from "./sync.js";
 import { createCloud, ARRAYS } from "./cloud.js";
 import { importAllArticles } from "./importer.js";
 import { buildPrompt, parseArticle, cleanPost } from "./prompts.js";
-import { buildArticleHTML, slugify, readMinutes, wordCount, resizePhoto, PILLAR_STYLE } from "./article.js";
+import { buildArticleHTML, slugify, readMinutes, wordCount, resizePhoto, cropPhoto, PILLAR_STYLE } from "./article.js";
 
 const STORE_KEY = "e2s-camp-de-base-v1";
 const $ = (s, root = document) => root.querySelector(s);
@@ -1329,6 +1329,7 @@ function articlePanelHTML(c) {
   const a = art(c);
   const ph = a.photo || {};
   const src = ph.data || (ph.file ? `/assets/${ph.file}` : "");
+  const posY = Number.isFinite(ph.posY) ? ph.posY : 50;
   const slug = a.slug || c.slug || slugify(c.title);
   const excerptLen = (a.excerpt || "").length;
   const words = wordCount(a.body);
@@ -1340,7 +1341,11 @@ function articlePanelHTML(c) {
 
         <div class="photo-slot ${src ? "has-photo" : ""}">
           ${src
-            ? `<img src="${src}" alt="">
+            ? `<div class="photo-frame" title="Glisse vers le haut ou le bas pour recadrer">
+                 <img src="${src}" alt="" draggable="false" style="object-position: 50% ${posY}%">
+                 <span class="photo-hint" aria-hidden="true">↕ Glisse pour recadrer</span>
+               </div>
+               <label class="photo-crop"><span>Cadrage</span><input type="range" name="a-posy" min="0" max="100" step="1" value="${posY}" aria-label="Cadrage vertical de la photo (0 = haut, 100 = bas)"></label>
                <div class="photo-actions">
                  <label class="btn btn-ghost btn-sm">Changer la photo<input type="file" accept="image/*" data-photo hidden></label>
                  <button type="button" class="btn btn-ghost btn-sm" data-photo-remove>Retirer</button>
@@ -1403,6 +1408,14 @@ function readArticleForm(f) {
   a.body = v("a-body");
   a.question = v("a-question").trim();
   a.sources = v("a-sources");
+  const py = f.elements.namedItem("a-posy");
+  if (py && a.photo) {
+    const val = Number(py.value);
+    if (val !== (Number.isFinite(a.photo.posY) ? a.photo.posY : 50)) {
+      a.photo.posY = val;
+      if (!a.photo.data) a.photo.reframed = true; // photo déjà sur le site : à renvoyer recadrée
+    }
+  }
   if (!a.publishedAt) a.slug = slugify(v("a-slug")) || slugify(c.title);
   a.photo = { ...(a.photo || {}), alt: v("a-alt").trim(), credit: v("a-credit").trim() };
 }
@@ -1454,12 +1467,23 @@ function articleProblems(c) {
   return out;
 }
 
-function openPreview() {
+/* Photo telle qu'elle partira sur le site : recadrée au format 16:9 */
+async function framedPhoto(c) {
+  const ph = art(c).photo || {};
+  const src = ph.data || (ph.reframed && ph.file ? `/assets/${ph.file}` : "");
+  if (!src) return "";
+  return cropPhoto(src, Number.isFinite(ph.posY) ? ph.posY : 50);
+}
+
+async function openPreview() {
   readEditorForm();
   const c = draft.content;
   const d = $("#preview");
   d.innerHTML = `<div class="preview-bar"><span>Aperçu de l'article tel qu'il apparaîtra sur le site</span><button type="button" class="btn btn-ghost btn-sm" data-preview-close>Fermer</button></div><iframe class="preview-frame" title="Aperçu de l'article"></iframe>`;
-  d.querySelector("iframe").srcdoc = buildArticleHTML(articleData(c, { preview: true }), { preview: true });
+  const data = articleData(c, { preview: true });
+  const framed = await framedPhoto(c).catch(() => "");
+  if (framed && data.photo) data.photo.src = framed;
+  d.querySelector("iframe").srcdoc = buildArticleHTML(data, { preview: true });
   d.showModal();
 }
 document.addEventListener("click", (e) => {
@@ -1485,6 +1509,7 @@ async function publishArticle(btn) {
   btn.disabled = true;
   btn.textContent = "Publication…";
   try {
+    const image = await framedPhoto(c).catch(() => "");
     const r = await fetch("/api/camp/publish", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -1498,7 +1523,7 @@ async function publishArticle(btn) {
         tag: st.tag,
         label: st.label,
         date: data.date,
-        image: a.photo?.data || "",
+        image,
         imageFile: a.photo?.file || "",
       }),
     });
@@ -1509,7 +1534,12 @@ async function publishArticle(btn) {
 
     // Le contenu passe en « Publié » avec sa publication Site
     if (!a.publishedAt) a.publishedAt = data.date;
-    if (a.photo?.data) { a.photo.file = j.imageFile; delete a.photo.data; }
+    if (image && a.photo) {
+      a.photo.file = j.imageFile;
+      delete a.photo.data;
+      delete a.photo.reframed;
+      a.photo.posY = 50; // la photo publiée est déjà recadrée
+    }
     c.slug = a.slug;
     let site = draft.pubs.find((p) => p.network === "site");
     if (!site) { site = newPub("site", data.date); draft.pubs.push(site); }
@@ -1732,7 +1762,42 @@ editor.addEventListener("submit", (e) => {
   e.preventDefault();
   commitEditor();
 });
+/* Recadrage à la souris ou au doigt : la photo suit le glisser vertical */
+editor.addEventListener("pointerdown", (e) => {
+  const frame = e.target.closest(".photo-frame");
+  if (!frame) return;
+  const img = frame.querySelector("img");
+  const range = editor.querySelector('[name="a-posy"]');
+  if (!img || !range || !img.naturalWidth) return;
+  e.preventDefault();
+  frame.setPointerCapture(e.pointerId);
+  frame.classList.add("is-dragging");
+  const startY = e.clientY;
+  const start = Number(range.value);
+  // hauteur de photo qui dépasse du cadre (ce qu'on peut faire défiler)
+  const shown = frame.clientWidth * (img.naturalHeight / img.naturalWidth);
+  const spare = Math.max(1, shown - frame.clientHeight);
+  const move = (ev) => {
+    const v = Math.round(Math.min(100, Math.max(0, start - ((ev.clientY - startY) / spare) * 100)));
+    range.value = v;
+    img.style.objectPosition = `50% ${v}%`;
+  };
+  const up = () => {
+    frame.classList.remove("is-dragging");
+    frame.removeEventListener("pointermove", move);
+    frame.removeEventListener("pointerup", up);
+    frame.removeEventListener("pointercancel", up);
+  };
+  frame.addEventListener("pointermove", move);
+  frame.addEventListener("pointerup", up);
+  frame.addEventListener("pointercancel", up);
+});
+
 editor.addEventListener("input", (e) => {
+  if (e.target.name === "a-posy") {
+    const img = editor.querySelector(".photo-frame img");
+    if (img) img.style.objectPosition = `50% ${e.target.value}%`;
+  }
   if (e.target.name === "text") updateCharCount();
   // Réponse de Claude collée telle quelle dans le texte de l'article : on range chaque partie à sa place
   if (e.target.name === "a-body" && /^[#*\s]*={2,}\s*TEXTE\s*={2,}/im.test(e.target.value)) {
@@ -1765,7 +1830,8 @@ editor.addEventListener("change", async (e) => {
       const data = await resizePhoto(file);
       if (draft) {
         const a = art(draft.content);
-        a.photo = { ...(a.photo || {}), data };
+        a.photo = { ...(a.photo || {}), data, posY: 50 };
+        delete a.photo.reframed;
       }
     } catch (err) {
       const heic = /hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
