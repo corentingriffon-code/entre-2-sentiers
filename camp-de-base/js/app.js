@@ -43,6 +43,11 @@ function load() {
 }
 let state = load();
 let storageOk = true;
+// Copies d'affichage des photos fraîchement publiées : inutiles au bout d'un jour
+state.contents.forEach((c) => {
+  const ph = c.article?.photo;
+  if (ph?.shown && Date.now() - (ph.shownAt || 0) > 864e5) { delete ph.shown; delete ph.shownAt; }
+});
 
 /* Copie de sécurité dans ce navigateur : l'état de la veille, gardé une journée */
 const BACKUP_KEY = STORE_KEY + ":backup";
@@ -1328,7 +1333,9 @@ async function unpublishArticle(btn, { thenDelete = false } = {}) {
 function articlePanelHTML(c) {
   const a = art(c);
   const ph = a.photo || {};
-  const src = ph.data || (ph.file ? `/assets/${ph.file}` : "");
+  const fresh = ph.shown && Date.now() - (ph.shownAt || 0) < 15 * 60 * 1000;
+  // ?v= : une adresse neuve, pour ne jamais ressortir un « introuvable » gardé en cache
+  const src = ph.data || (fresh ? ph.shown : "") || (ph.file ? `/assets/${ph.file}?v=2` : "");
   const posY = Number.isFinite(ph.posY) ? ph.posY : 50;
   const slug = a.slug || c.slug || slugify(c.title);
   const excerptLen = (a.excerpt || "").length;
@@ -1440,7 +1447,7 @@ function relatedFor(c) {
     .map(({ x }) => ({ slug: x.article?.slug || x.slug, title: x.title, pillar: x.pillar, photo: x.article?.photo?.file || "" }));
 }
 
-function articleData(c, { preview }) {
+function articleData(c, { preview, newFile = "" }) {
   const a = art(c);
   const date = a.publishedAt || today();
   const ph = a.photo || {};
@@ -1458,7 +1465,7 @@ function articleData(c, { preview }) {
     photo: hasPhoto
       ? (() => {
           // Nouvelle photo : enregistrée sous <adresse>-featured.jpg ; photo déjà sur le site : on garde son fichier
-          const file = ph.data ? `${a.slug}-featured.jpg` : ph.file;
+          const file = newFile || (ph.data ? `${a.slug}-featured.jpg` : ph.file);
           return { src: preview && ph.data ? ph.data : `../assets/${file}`, file, alt: ph.alt, credit: ph.credit };
         })()
       : null,
@@ -1529,12 +1536,13 @@ async function publishArticle(btn) {
   const a = art(c);
   if (!a.publishedAt && !confirm(`Publier « ${c.title} » sur entre2sentiers.com ?\nIl deviendra la « Dernière actualité » du site.`)) return;
 
-  const data = articleData(c, { preview: false });
-  const st = PILLAR_STYLE[data.pillar];
   btn.disabled = true;
   btn.textContent = "Publication…";
   try {
     const image = await framedPhoto(c).catch(() => "");
+    const newFile = image ? `${a.slug}-featured-${Date.now().toString(36)}.jpg` : "";
+    const data = articleData(c, { preview: false, newFile });
+    const st = PILLAR_STYLE[data.pillar];
     const r = await fetch("/api/camp/publish", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -1549,6 +1557,7 @@ async function publishArticle(btn) {
         label: st.label,
         date: data.date,
         image,
+        imageName: newFile,
         imageFile: a.photo?.file || "",
       }),
     });
@@ -1561,6 +1570,9 @@ async function publishArticle(btn) {
     if (!a.publishedAt) a.publishedAt = data.date;
     if (image && a.photo) {
       a.photo.file = j.imageFile;
+      // le temps que Vercel mette la photo en ligne (~1 min), on l'affiche depuis cet appareil
+      a.photo.shown = image;
+      a.photo.shownAt = Date.now();
       delete a.photo.data;
       delete a.photo.reframed;
       a.photo.posY = 50; // la photo publiée est déjà recadrée

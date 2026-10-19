@@ -21,6 +21,7 @@ function slim(state) {
   const copy = JSON.parse(JSON.stringify(state));
   (copy.contents || []).forEach((c) => {
     if (c.article?.photo?.data) delete c.article.photo.data;
+    if (c.article?.photo?.shown) { delete c.article.photo.shown; delete c.article.photo.shownAt; }
   });
   return copy;
 }
