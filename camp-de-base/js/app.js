@@ -1396,6 +1396,7 @@ Un paragraphe, avec du **gras**, de l'*italique* et un [lien](https://exemple.co
           ${legacy
             ? `<p class="muted small">Publié avant le Camp de base : il n'est pas modifiable directement. Pour le corriger, dépublie-le puis republie-le (il redeviendra la « Dernière actualité »).</p>`
             : `<button type="button" class="btn btn-primary" data-sitepublish>${a.publishedAt ? "Mettre à jour sur le site" : "🚀 Publier sur le site"}</button>`}
+          <p class="publish-msg" id="publish-msg" role="status" hidden></p>
           ${cfg && !cfg.configured ? `<p class="sync-missing">Publication pas encore configurée sur Vercel${cfg.missing?.length ? ` : ${cfg.missing.join(", ")}` : ""} (voir CONNEXIONS.md).</p>` : ""}
         </div>
       </details>`;
@@ -1499,13 +1500,28 @@ document.addEventListener("click", (e) => {
   if (e.target.closest("[data-preview-close]")) $("#preview").close();
 });
 
+function publishMsg(text) {
+  const el = $("#publish-msg");
+  if (!el) return;
+  el.hidden = !text;
+  el.textContent = text || "";
+  if (text) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
 async function publishArticle(btn) {
   readEditorForm();
   const c = draft.content;
+  publishMsg("");
   const problems = articleProblems(c);
-  if (problems.length) return toast(`Il manque : ${problems.join(", ")}`, "warn");
+  if (problems.length) {
+    publishMsg(`Impossible de publier : il manque ${problems.join(", ")}.`);
+    return toast(`Il manque : ${problems.join(", ")}`, "warn");
+  }
   const cfg = await loadPublishConfig();
-  if (!cfg.configured) return toast("La publication n'est pas encore configurée sur Vercel.", "warn");
+  if (!cfg.configured) {
+    publishMsg(`La publication n'est pas configurée sur Vercel${cfg.missing?.length ? ` (${cfg.missing.join(", ")})` : ""}.`);
+    return toast("La publication n'est pas encore configurée sur Vercel.", "warn");
+  }
 
   const code = getPublishCode();
   if (!code) return;
@@ -1536,8 +1552,8 @@ async function publishArticle(btn) {
         imageFile: a.photo?.file || "",
       }),
     });
-    const j = await r.json().catch(() => ({ ok: false, error: `Erreur ${r.status}` }));
-    if (j.badCode) { rememberPublishCode(code, false); throw new Error("Code de publication incorrect."); }
+    const j = await r.json().catch(() => ({ ok: false, error: r.status === 413 ? "Article ou photo trop lourd pour l'envoi : essaie une photo plus légère." : `Erreur du serveur (${r.status}).` }));
+    if (j.badCode) { rememberPublishCode(code, false); throw new Error("Code de publication incorrect : il te sera redemandé au prochain essai."); }
     if (!j.ok) throw new Error(j.error || "Publication impossible.");
     rememberPublishCode(code, true);
 
@@ -1561,7 +1577,9 @@ async function publishArticle(btn) {
     toast(j.isNew ? "Article publié ! Il sera en ligne dans environ 1 minute." : "Article mis à jour sur le site.", "xp");
     commitEditor({ fromPublish: true });
   } catch (err) {
-    toast(err.message, "warn");
+    const msg = err.message === "Failed to fetch" ? "Connexion au serveur impossible (réseau ?). Réessaie dans un instant." : err.message;
+    toast(msg, "warn");
+    publishMsg(`Publication échouée : ${msg}`);
     btn.disabled = false;
     btn.textContent = a.publishedAt ? "Mettre à jour sur le site" : "🚀 Publier sur le site";
   }
@@ -1886,9 +1904,18 @@ function toast(text, kind = "") {
   const el = document.createElement("div");
   el.className = `toast toast-${kind}`;
   el.textContent = text;
-  $("#toasts").appendChild(el);
-  setTimeout(() => el.classList.add("is-out"), 2600);
-  setTimeout(() => el.remove(), 3200);
+  const box = $("#toasts");
+  box.appendChild(el);
+  // Une fiche ouverte (fenêtre modale) passe au premier plan : on y remet les messages, par-dessus
+  if (box.showPopover) {
+    try {
+      if (box.matches(":popover-open")) box.hidePopover();
+      box.showPopover();
+    } catch (e) { /* navigateur ancien : messages sous la fiche */ }
+  }
+  const stay = kind === "warn" ? 6500 : 2600; // les erreurs restent le temps d'être lues
+  setTimeout(() => el.classList.add("is-out"), stay);
+  setTimeout(() => el.remove(), stay + 600);
 }
 
 /* ---------- Événements globaux ---------- */
