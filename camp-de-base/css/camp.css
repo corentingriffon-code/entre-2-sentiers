@@ -788,3 +788,7 @@ body:not([data-screen="sentier"]) .keys-hint { display: none; }
 .post-text-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .pub-row.is-focus { box-shadow: 0 0 0 3px rgba(159, 175, 107, 0.55); }
 .pub-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.sources-preview:empty { display: none; }
+.sources-preview { margin-top: -10px; padding: 10px 12px; border-radius: 10px; background: var(--paper-2); font-size: 0.86rem; }
+.sources-preview ul { margin: 4px 0 0; padding-left: 1.1em; display: grid; gap: 3px; }
+.sources-preview a { color: var(--lime-deep); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
