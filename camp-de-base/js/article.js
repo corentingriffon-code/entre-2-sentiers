@@ -298,23 +298,36 @@ ${relatedHTML}
 }
 
 /* Réduit une photo (fichier) en JPEG de 1600 px de large max, renvoie une data URL */
-export function resizePhoto(file, max = 1600, quality = 0.82) {
+/* Réduit la photo (JPEG 1600 px) sans passer par une adresse blob:, que la politique
+   de sécurité du site bloque : décodage direct, sinon lecture en data URL */
+export async function resizePhoto(file, max = 1600, quality = 0.82) {
+  let src = null;
+  if (typeof createImageBitmap === "function") {
+    try { src = await createImageBitmap(file, { imageOrientation: "from-image" }); } catch (e) { src = null; }
+  }
+  if (!src) src = await imageFromDataUrl(file);
+  const k = Math.min(1, max / Math.max(src.width, src.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(src.width * k);
+  c.height = Math.round(src.height * k);
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#fff"; // fond blanc pour les PNG transparents
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(src, 0, 0, c.width, c.height);
+  src.close?.();
+  return c.toDataURL("image/jpeg", quality);
+}
+
+function imageFromDataUrl(file) {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const k = Math.min(1, max / Math.max(img.width, img.height));
-      const c = document.createElement("canvas");
-      c.width = Math.round(img.width * k);
-      c.height = Math.round(img.height * k);
-      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-      URL.revokeObjectURL(url);
-      resolve(c.toDataURL("image/jpeg", quality));
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Image illisible"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Image illisible"));
+      img.src = reader.result;
     };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Image illisible"));
-    };
-    img.src = url;
+    reader.readAsDataURL(file);
   });
 }
