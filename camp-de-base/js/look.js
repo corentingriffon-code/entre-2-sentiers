@@ -65,6 +65,7 @@ const NOISE_GLSL = `
     vec2 i = floor(p); vec2 f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
     return mix(mix(e2sHash(i), e2sHash(i + vec2(1.0, 0.0)), u.x), mix(e2sHash(i + vec2(0.0, 1.0)), e2sHash(i + vec2(1.0, 1.0)), u.x), u.y);
   }
+  float e2sFbm2(vec2 p) { return 0.65 * e2sNoise(p) + 0.35 * e2sNoise(p * 2.07 + 13.1); }
   float e2sFbm(vec2 p) {
     float s = 0.0; float a = 0.5;
     for (int i = 0; i < 4; i++) { s += a * e2sNoise(p); p = p * 2.07 + 13.1; a *= 0.5; }
@@ -93,9 +94,10 @@ export function terrainMaterial(material) {
         `#include <normal_fragment_maps>
         {
           float k = 0.35;
-          float h0 = e2sFbm(vWPos.xz * 0.45);
-          float hx = e2sFbm((vWPos.xz + vec2(0.25, 0.0)) * 0.45);
-          float hz = e2sFbm((vWPos.xz + vec2(0.0, 0.25)) * 0.45);
+          // relief fin : version allégée du bruit (3 × 2 octaves au lieu de 3 × 4)
+          float h0 = e2sFbm2(vWPos.xz * 0.45);
+          float hx = e2sFbm2((vWPos.xz + vec2(0.25, 0.0)) * 0.45);
+          float hz = e2sFbm2((vWPos.xz + vec2(0.0, 0.25)) * 0.45);
           vec3 g = vec3(hx - h0, 0.0, hz - h0) * (k / 0.25);
           normal = normalize(normal - (viewMatrix * vec4(g, 0.0)).xyz);
         }`
