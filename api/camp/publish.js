@@ -230,7 +230,11 @@ module.exports = async (req, res) => {
     if (b.image) {
       const m = String(b.image).match(/^data:image\/jpeg;base64,(.+)$/);
       if (!m) return res.status(400).json({ ok: false, error: "Photo invalide (JPEG attendu)." });
-      image = `${slug}-featured.jpg`;
+      // Nom unique à chaque envoi (choisi par le Camp de base, qui l'écrit dans la page) :
+      // un navigateur ne peut pas ressortir une ancienne version ou un « introuvable » gardé en cache
+      const wanted = String(b.imageName || "");
+      const ok = wanted.startsWith(`${slug}-featured`) && /^[a-z0-9-]+\.jpg$/.test(wanted) && wanted.length < 140;
+      image = ok ? wanted : `${slug}-featured.jpg`;
       files.push({ path: `assets/${image}`, content: m[1], encoding: "base64" });
     }
 
