@@ -1760,11 +1760,20 @@ editor.addEventListener("change", async (e) => {
   }
   if (e.target.matches("[data-photo]") && e.target.files[0]) {
     readEditorForm();
+    const file = e.target.files[0];
     try {
-      art(draft.content).photo.data = await resizePhoto(e.target.files[0]);
+      const data = await resizePhoto(file);
+      if (draft) {
+        const a = art(draft.content);
+        a.photo = { ...(a.photo || {}), data };
+      }
     } catch (err) {
-      toast("Cette image n'a pas pu être lue.", "warn");
+      const heic = /hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
+      toast(heic
+        ? "Photo d'iPhone au format HEIC : ce navigateur ne sait pas la lire. Exporte-la en JPEG (ou ouvre le Camp de base dans Safari) puis réessaie."
+        : "Cette image n'a pas pu être lue. Essaie une photo en JPEG ou PNG.", "warn");
     }
+    e.target.value = ""; // pour pouvoir choisir à nouveau le même fichier
     if (draft) renderEditor();
   }
 });
