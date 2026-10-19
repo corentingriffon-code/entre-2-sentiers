@@ -714,6 +714,19 @@ body:not([data-screen="sentier"]) .keys-hint { display: none; }
 .photo-icon { font-size: 2rem; }
 .photo-slot.has-photo { position: relative; }
 .photo-slot img { display: block; width: 100%; max-height: 300px; object-fit: cover; }
+/* Cadre au format de la photo publiée (16:9) : on glisse la photo pour choisir la partie visible */
+.photo-frame { position: relative; aspect-ratio: 16 / 9; overflow: hidden; cursor: grab; touch-action: none; user-select: none; }
+.photo-frame.is-dragging { cursor: grabbing; }
+.photo-frame img { width: 100%; height: 100%; max-height: none; object-fit: cover; pointer-events: none; }
+.photo-hint {
+  position: absolute; left: 10px; top: 10px; padding: 4px 10px; border-radius: 999px;
+  background: rgba(29, 38, 30, 0.72); color: #fff; font-size: 0.75rem; font-weight: 600; pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.photo-frame:hover .photo-hint, .photo-frame.is-dragging .photo-hint { opacity: 0; }
+.photo-crop { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--paper-2); font-size: 0.8rem; }
+.photo-crop input { flex: 1; accent-color: var(--lime-deep); }
+.photo-slot.has-photo .photo-actions { bottom: 52px; }
 .photo-actions { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 6px; }
 .photo-actions .btn { background: rgba(255, 255, 255, 0.92); cursor: pointer; }
 .article-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }

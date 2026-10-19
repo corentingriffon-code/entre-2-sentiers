@@ -331,3 +331,27 @@ function imageFromDataUrl(file) {
     reader.readAsDataURL(file);
   });
 }
+
+/* Recadrage : découpe la photo au format 16:9 en gardant la hauteur choisie
+   (posY : 0 = haut de la photo, 100 = bas). src : data URL ou image du site (/assets/…). */
+export const PHOTO_RATIO = 16 / 9;
+export function cropPhoto(src, posY = 50, maxW = 1600, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onerror = () => reject(new Error("Image illisible"));
+    img.onload = () => {
+      let sw = img.naturalWidth;
+      let sh = sw / PHOTO_RATIO;
+      if (sh > img.naturalHeight) { sh = img.naturalHeight; sw = sh * PHOTO_RATIO; }
+      const sx = (img.naturalWidth - sw) / 2;
+      const sy = (img.naturalHeight - sh) * Math.min(100, Math.max(0, posY)) / 100;
+      const w = Math.min(maxW, Math.round(sw));
+      const c = document.createElement("canvas");
+      c.width = w;
+      c.height = Math.round(w / PHOTO_RATIO);
+      c.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      resolve(c.toDataURL("image/jpeg", quality));
+    };
+    img.src = src;
+  });
+}
