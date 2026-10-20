@@ -148,7 +148,7 @@ Ensuite :
 - l'article se range dans « Rédaction de l'article » (texte, chapô, adresse, question de fin). La ligne **Site** s'ouvre pour choisir la date et l'heure ;
 - le post se range dans la ligne **LinkedIn** (zone « Texte du post », compteur sur 3 000 caractères, bouton « Copier le texte »), avec sa date et son heure. Si l'article existe déjà, le post s'appuie dessus et met son lien.
 
-**La référence : Decathlon** : l'article « Chez Decathlon, on ne signe plus des athlètes, on signe des experts » et le post LinkedIn qui l'accompagne servent de modèle (fichier `camp-de-base/js/reference.js`). Les articles s'inspirent de la construction de l'article Decathlon. Le post LinkedIn est rédigé **à partir de ton article** (génère et colle l'article d'abord), en reproduisant la transformation article → post de Decathlon (lien en commentaire, pas de hashtags).
+**La référence : Decathlon** : l'article « Chez Decathlon, on ne signe plus des athlètes, on signe des experts » et son post LinkedIn servent de modèle (`camp-de-base/js/reference.js`). « Générer un article » demande à Claude, à partir du titre du contenu et du brouillon, l'article **et** le post LinkedIn qui l'accompagne : en collant sa réponse dans « Texte de l'article », l'article et le post se rangent chacun à sa place. « Générer un post LinkedIn » refait seulement le post, à partir de l'article.
 
 Claude ne publie rien tout seul : tu relis, tu ajustes, puis tu publies comme d'habitude. Il a pour consigne de ne rien inventer (chiffres, citations, noms) qui ne soit pas dans ton brouillon ou tes notes. Relis quand même les faits.
 

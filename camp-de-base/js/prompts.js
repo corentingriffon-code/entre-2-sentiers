@@ -34,7 +34,21 @@ Réponds UNIQUEMENT avec ce modèle, en gardant exactement les lignes === … ==
 === QUESTION ===
 (une question ouverte posée aux lecteurs à la fin, une phrase)
 === SOURCES ===
-(une par ligne au format "Titre | https://lien", uniquement des liens présents dans mon brouillon ou mes notes ; laisse vide sinon)`;
+(une par ligne au format "Titre | https://lien", uniquement des liens présents dans mon brouillon ou mes notes ; laisse vide sinon)
+=== POST LINKEDIN ===
+(le post LinkedIn qui accompagne CET article, écrit à partir de l'article que tu viens de rédiger, selon les règles « Post LinkedIn » ci-dessous)`;
+
+/* Règles du post, réutilisées quand l'article et le post sont rédigés ensemble */
+const POST_RULES = `Règles « Post LinkedIn » :
+- Le post reprend l'idée centrale de l'article, son angle et un ou deux de ses faits les plus forts, et donne envie de le lire. Rien qui ne soit pas dans l'article.
+- Entre 700 et 1300 caractères environ.
+- Une première ligne courte et affirmative qui bouscule une idée reçue, puis une deuxième ligne qui la retourne.
+- Des paragraphes très courts (1 à 3 lignes) séparés par une ligne vide. Texte brut : pas de Markdown, pas de gras, pas de titres, pas de hashtags.
+- Une phrase-choc qui résume l'idée en une ligne.
+- 2 ou 3 emojis au plus, placés en fin de ligne, jamais au début du post.
+- Avant-dernier paragraphe : « J'ai regardé… » ou équivalent, qui présente ce que l'article explore.
+- Dernière ligne : « Retrouvez le lien de l'article dans les commentaires 👇 ».
+- Ma référence : mon article sur Decathlon et le post que j'en ai tiré (donnés plus bas). Fais la même transformation article → post, sans reprendre leurs phrases ni leur sujet.`;
 
 const LINKEDIN_RULES = `Rédige le post LinkedIn qui accompagne mon article (donné plus bas dans <mon_article>).
 
@@ -55,8 +69,8 @@ const refArticle = () => `<article_reference titre="${REF_ARTICLE.title}">\nChap
 
 export function buildPrompt(mode, { title, pillar, draft, notes, article = {} }) {
   if (mode === "article") {
-    const parts = [VOICE, ARTICLE_RULES, refArticle()];
-    if (title) parts.push(`<titre>${title}</titre>`);
+    const parts = [VOICE, ARTICLE_RULES, POST_RULES, refArticle(), `<post_reference>\n${REF_POST}\n</post_reference>`];
+    if (title) parts.push(`<titre_du_contenu>${title}</titre_du_contenu>`);
     if (pillar) parts.push(`<thematique>${pillar}</thematique>`);
     if (draft) parts.push(`<brouillon>\n${draft}\n</brouillon>`);
     if (notes) parts.push(`<notes>\n${notes}\n</notes>`);
@@ -75,18 +89,19 @@ export function buildPrompt(mode, { title, pillar, draft, notes, article = {} })
   if (notes) parts.push(`<notes>\n${notes}\n</notes>`);
   return parts.join("\n\n");
 }
-const KEYS = { TITRE: "title", ADRESSE: "slug", CHAPO: "excerpt", "CHAPÔ": "excerpt", TEXTE: "body", QUESTION: "question", SOURCES: "sources" };
+const KEYS = { TITRE: "title", ADRESSE: "slug", CHAPO: "excerpt", "CHAPÔ": "excerpt", TEXTE: "body", QUESTION: "question", SOURCES: "sources", "POST LINKEDIN": "post", POST: "post" };
 
 /* Découpe la réponse collée ; si les repères manquent, tout part dans le texte de l'article */
 export function parseArticle(raw) {
   const text = String(raw || "").replace(/\r\n/g, "\n").replace(/^```[a-z]*\n|\n```\s*$/g, "");
-  const out = { title: "", slug: "", excerpt: "", body: "", question: "", sources: "" };
-  const re = /^[#*\s]*={2,}\s*([A-ZÀ-Üa-zà-ü]+)\s*={2,}[*\s]*$/gm;
-  const marks = [...text.matchAll(re)].filter((m) => KEYS[m[1].toUpperCase()]);
+  const out = { title: "", slug: "", excerpt: "", body: "", question: "", sources: "", post: "" };
+  const re = /^[#*\s]*={2,}\s*([A-ZÀ-Üa-zà-ü][A-ZÀ-Üa-zà-ü ]*?)\s*={2,}[*\s]*$/gm;
+  const key = (m) => KEYS[m[1].toUpperCase().replace(/\s+/g, " ")];
+  const marks = [...text.matchAll(re)].filter(key);
   if (!marks.length) { out.body = text.trim(); return out; }
   marks.forEach((m, i) => {
     const end = i + 1 < marks.length ? marks[i + 1].index : text.length;
-    out[KEYS[m[1].toUpperCase()]] = text.slice(m.index + m[0].length, end).trim();
+    out[key(m)] = text.slice(m.index + m[0].length, end).trim();
   });
   out.slug = out.slug.replace(/^.*\/articles\//, "").replace(/[()]/g, "").trim();
   return out;

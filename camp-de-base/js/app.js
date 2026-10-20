@@ -1154,7 +1154,23 @@ function genInput(c) {
 const REDAC_URL = "https://claude.ai/chat/5d9e3183-8013-4c37-86b2-ee7c811f78b2";
 const REDAC_TARGET = "e2s-redaction";
 
+/* Copie immédiate (synchrone) : elle doit être finie avant d'ouvrir l'onglet Claude,
+   sinon le navigateur la refuse (la page n'a plus la main) et Ctrl+V ne colle rien */
+function copyNow(text) {
+  const host = document.querySelector("dialog[open]") || document.body; // dans la fiche ouverte, sinon la sélection est bloquée
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  ta.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;";
+  host.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+  ta.remove();
+  return ok;
+}
 function copyText(text) {
+  if (copyNow(text)) return Promise.resolve();
   if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
   return Promise.reject(new Error("clipboard"));
 }
@@ -1183,7 +1199,10 @@ async function generate(mode, btn) {
   // Mode gratuit : pas de clé sur Vercel → on passe par claude.ai
   if (!genConfig?.configured) {
     const prompt = buildPrompt(mode, genInput(c));
-    const copied = copyText(prompt); // avant d'ouvrir l'onglet, tant que la page a le focus
+    let copiedOk = copyNow(prompt); // terminé AVANT d'ouvrir l'onglet
+    if (!copiedOk && navigator.clipboard?.writeText) {
+      copiedOk = await navigator.clipboard.writeText(prompt).then(() => true, () => false);
+    }
     window.open(REDAC_URL, REDAC_TARGET);
     // Préparer l'endroit où coller la réponse : le texte de l'article ou le texte du post LinkedIn
     const date = d.pubs.find((p) => p.date)?.date || "";
@@ -1195,11 +1214,16 @@ async function generate(mode, btn) {
       d.pubs.push(newPub("linkedin", date));
     }
     renderEditor();
-    const where = mode === "article" ? "« Texte de l'article »" : "« Texte du post LinkedIn »";
-    copied.then(
-      () => toast(`Demande copiée : dans Claude, fais Ctrl+V (⌘+V) puis Entrée. Colle ensuite sa réponse dans ${where}.`),
-      () => toast("Copie automatique impossible : réessaie le bouton.", "warn"),
-    );
+    const where = mode === "article" ? "« Texte de l'article » (l'article et le post LinkedIn se rangent tout seuls)" : "« Texte du post LinkedIn »";
+    if (copiedOk) toast(`Demande copiée : dans Claude, fais Ctrl+V (⌘+V) puis Entrée. Colle ensuite sa réponse dans ${where}.`);
+    else {
+      toast("Copie automatique impossible : copie la demande à la main (cadre sous les boutons).", "warn");
+      const note = $("#gen-note");
+      if (note) {
+        note.innerHTML = `<span class="sync-missing">Sélectionne tout (Ctrl+A) dans ce cadre, copie (Ctrl+C) puis colle dans Claude :</span><textarea class="input" rows="4" readonly>${esc(prompt)}</textarea>`;
+        note.querySelector("textarea")?.select();
+      }
+    }
     return;
   }
 
@@ -1253,6 +1277,11 @@ function applyGenerated(mode, result) {
     if (g.sources?.trim()) aa.sources = formatSources(g.sources);
     if (!aa.publishedAt && !legacyArticle(c) && !c.slug) aa.slug = slugify(g.slug || c.title);
     if (!d.pubs.some((p) => p.network === "site")) d.pubs.unshift(newPub("site", date));
+    if (g.post?.trim()) {
+      let li = d.pubs.find((x) => x.network === "linkedin");
+      if (!li) { li = newPub("linkedin", date); d.pubs.push(li); }
+      li.text = cleanPost(g.post);
+    }
     loadPublishConfig().then(() => draft === d && (readEditorForm(), renderEditor()));
   } else {
     let p = d.pubs.find((x) => x.network === "linkedin");
@@ -1265,7 +1294,7 @@ function applyGenerated(mode, result) {
     : $$(".pub-row", editor).find((el) => d.pubs[Number(el.dataset.i)]?.network === "linkedin");
   target?.scrollIntoView({ block: "start", behavior: "smooth" });
   toast(mode === "article"
-    ? "Article rédigé. Relis-le, ajoute une photo et choisis la date de publication."
+    ? (result.post?.trim() ? "Article et post LinkedIn rangés. Relis-les, ajoute une photo et choisis les dates." : "Article rédigé. Relis-le, ajoute une photo et choisis la date de publication.")
     : "Post LinkedIn rédigé. Relis-le et choisis la date et l'heure de publication.");
 }
 
@@ -1933,7 +1962,8 @@ function toast(text, kind = "") {
       box.showPopover();
     } catch (e) { /* navigateur ancien : messages sous la fiche */ }
   }
-  const stay = kind === "warn" ? 6500 : 2600; // les erreurs restent le temps d'être lues
+  // le temps de lire : plus long pour les erreurs et les consignes
+  const stay = Math.min(9000, Math.max(kind === "warn" ? 6500 : 2600, text.length * 55));
   setTimeout(() => el.classList.add("is-out"), stay);
   setTimeout(() => el.remove(), stay + 600);
 }
