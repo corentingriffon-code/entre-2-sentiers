@@ -1145,7 +1145,8 @@ function genInput(c) {
     pillar: PILLARS[c.pillar] || "",
     draft: c.text,
     notes: c.notes,
-    article: c.kind === "article" ? { excerpt: a.excerpt || "", body: a.body || "", url: slug ? ARTICLE_URL + slug : "" } : {},
+    // L'article (s'il est écrit) sert de base au post LinkedIn, quel que soit le format de la fiche
+    article: a.body?.trim() ? { excerpt: a.excerpt || "", body: a.body, question: a.question || "", url: slug ? ARTICLE_URL + slug : "" } : {},
   };
 }
 
@@ -1170,6 +1171,13 @@ async function generate(mode, btn) {
   }
   if (mode === "article" && a.body?.trim() && !confirm("L'article a déjà un texte. Le remplacer par une nouvelle version rédigée à partir du brouillon ?")) return;
   const li = d.pubs.find((p) => p.network === "linkedin");
+  // Le post se construit à partir de l'article : on conseille de générer l'article d'abord
+  if (mode === "linkedin" && wordCount(a.body || "") < 80) {
+    if (!confirm("Pas encore d'article : le post sera rédigé à partir du brouillon seulement.\n\nConseil : clique d'abord sur « Générer un article », colle la réponse de Claude, puis génère le post. Il sera construit à partir de l'article.\n\nGénérer quand même le post maintenant ?")) {
+      editor.querySelector('[data-gen="article"]')?.focus();
+      return;
+    }
+  }
   if (mode === "linkedin" && li?.text?.trim() && !confirm("Le post LinkedIn a déjà un texte. Le remplacer par une nouvelle version ?")) return;
 
   // Mode gratuit : pas de clé sur Vercel → on passe par claude.ai
