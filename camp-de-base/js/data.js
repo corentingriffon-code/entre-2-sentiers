@@ -106,6 +106,13 @@ const ideas = [
   ["Les marques vendent la déconnexion, mais vivent de votre connexion", "marques", "Le paradoxe du « déconnectez-vous » poussé via Instagram et les notifications."],
   ["Et si la quête du record n'était plus une question de performance, mais de marketing ?", "personnes", "Culture FKT et controverses sécurité, âge minimum pour l'Everest. Vérifier les sources avant usage."],
   ["Le vrai réseau social du coureur n'est pas une application, c'est son t-shirt", "personnes", "Prolonge l'article community management côté objet."],
+  ["LinkedIn, le réseau sous-exploité pour attirer des partenaires d'événement", "evenements", "Insta et Facebook parlent aux pratiquants. LinkedIn parle aux décideurs et aux sponsors. Pourquoi la plupart des organisateurs le traitent comme un canal secondaire."],
+  ["Comment transformer un sport-passion en business sans le dénaturer ?", "marques", "Monétiser une pratique outdoor sans trahir ses valeurs ni le territoire où elle se pratique."],
+  ["La course aux éditions, symptôme d'une mauvaise priorisation", "evenements", "Des organisateurs lancent une édition hiver ET été alors que l'édition principale est déjà mal tenue (pas de village partenaires, navettes approximatives). Vouloir grandir avant d'avoir stabilisé le produit de base."],
+  ["Faut-il annuler une course en cas de canicule ?", "evenements", "Pas qu'une question de sécurité : ce qu'annuler (ou ne pas annuler) coûte vraiment à une organisation, en argent déjà engagé et en image."],
+  ["Les collectivités, mauvais élève du marketing territorial", "territoires", "Les événements outdoor sont une vitrine et un outil de notoriété puissant pour un territoire, avec des retombées économiques réelles. Le pouvoir public sous-investit, sans voir l'impact social (vivre-ensemble, inclusion) en plus de l'économique."],
+  ["L'entraide entre petits organisateurs, plutôt que la concurrence", "personnes", "Les petites structures hésitent à demander de l'aide par pudeur, pensant que l'accompagnement c'est réservé aux grosses orgas. Citer Gilbert Ysern (directeur France Outdoor Sports Events) et le podcast La Skyline, qui a évoqué ce point directement."],
+  ["Un événement a-t-il vraiment besoin d'un site internet ?", "evenements", "Toutes les petites associations n'ont pas les moyens d'en faire un. Est-ce que ça reste un canal efficace, ou est-ce qu'Insta/Facebook/LinkedIn suffisent aujourd'hui ?"],
 ];
 
 const SITE_URL = "https://entre2sentiers.com/articles/";
