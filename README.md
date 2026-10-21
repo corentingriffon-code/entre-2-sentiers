@@ -49,6 +49,8 @@ Le site est 100% statique : il peut être déployé tel quel sur Vercel, Netlify
 
 `camp-de-base/` est un outil privé pour piloter la publication, pas une page du site : il n'est lié nulle part, il est exclu de l'indexation (meta `noindex`, en-tête `X-Robots-Tag` ; volontairement absent de `robots.txt` pour ne pas signaler son adresse) et il s'ouvre sur `/camp-de-base`.
 
+**Podcast** (onglet 🎙️, `camp-de-base/js/podcast.js`) : idées et épisodes en colonnes (idée → publié), fiche épisode (thème, invité et mails prêts à envoyer, tournage et logistique, questions d'interview générables avec Claude, listes avant/après tournage, diffusion), échéances dans le Planning, carnet d'invités. Données dans `state.episodes`, synchronisées et sauvegardées comme le reste.
+
 - **Sentier (3D)** : une montagne low-poly ; chaque contenu est une balise le long du sentier, dans l'ordre chronologique (drapeau vert = publié, drapeau blanc = programmé, cairn = prêt / en rédaction, bille = idée). Les petites pierres colorées au pied d'un drapeau indiquent les réseaux. Le coureur se tient sur la dernière publication ; le drapeau du sommet est l'objectif. Clic sur une balise = ouvrir le contenu.
 - **Balade** : au pied du sentier, un petit village regroupe les lieux du camp (Atelier = Contenus, Refuge = Planning, Cabane = Mémo, Observatoire = Stats ; Trophées au sommet). On déplace le coureur avec ZQSD / WASD / flèches ou en cliquant au sol ; dans un cercle ou près d'une balise, Entrée ouvre le lieu. Les étiquettes flottantes sont cliquables. Échap ramène le coureur sur le sentier.
 - **Planning** : calendrier mensuel. Glisser un contenu prêt sur un jour pour le programmer, glisser une publication pour la déplacer, cliquer sur un numéro de jour pour programmer ce jour-là.

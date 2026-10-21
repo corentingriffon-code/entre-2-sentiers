@@ -795,3 +795,56 @@ body:not([data-screen="sentier"]) .keys-hint { display: none; }
 .publish-msg { flex-basis: 100%; margin: 0; padding: 8px 12px; border-radius: 8px; background: rgba(163, 52, 31, 0.08); color: var(--late); font-size: 0.86rem; font-weight: 600; }
 /* Zone des messages en « popover » : au-dessus des fiches ouvertes */
 .toasts[popover] { inset: auto auto 24px 50%; margin: 0; padding: 0; border: 0; background: transparent; overflow: visible; color: inherit; }
+
+/* ---------- Podcast ---------- */
+.ep-quick { display: flex; gap: 8px; margin: 14px 0 12px; }
+.ep-quick .input { flex: 1; }
+.ep-board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 1fr); gap: 10px; overflow-x: auto; padding-bottom: 6px; align-items: start; }
+.ep-col { background: rgba(29, 38, 30, 0.05); border-radius: 14px; padding: 10px; display: grid; gap: 8px; min-height: 160px; align-content: start; transition: background 0.15s; }
+.ep-col.is-drop { background: rgba(159, 175, 107, 0.3); }
+.ep-col > header { display: flex; justify-content: space-between; font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+.ep-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 6px; cursor: grab; }
+.ep-card:hover { border-color: rgba(29, 38, 30, 0.35); }
+.ep-open { all: unset; display: grid; gap: 4px; cursor: pointer; }
+.ep-open:focus-visible { outline: 2px solid var(--lime-deep); outline-offset: 3px; border-radius: 6px; }
+.ep-guest { font-size: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.ep-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.74rem; color: var(--muted); }
+.ep-side { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; align-items: start; }
+.ep-up, .ep-guests { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ep-up li, .ep-guests li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; align-items: baseline; }
+.ep-up li.is-late .link { color: var(--late); }
+.g-chip { display: inline-block; font-size: 0.68rem; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--paper-2); color: var(--ink); white-space: nowrap; }
+.g-contacte, .g-relance { background: #f3e2b8; }
+.g-accepte { background: var(--lime); }
+.g-refuse { background: rgba(163, 52, 31, 0.15); color: var(--late); }
+.pod-chip {
+  display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0; border: 0; border-radius: 6px; padding: 2px 5px;
+  font-size: 0.72rem; cursor: pointer; text-align: left; background: #2f3a52; color: #fff;
+}
+.pod-chip.is-done { opacity: 0.6; }
+
+/* Fiche épisode */
+.episode-editor .ep-meta4 { grid-template-columns: 0.6fr 1fr 1.2fr 1fr; }
+.ep-sec { border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.ep-sec > summary { cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 14px; font-weight: 700; }
+.ep-sec[open] > summary { border-bottom: 1px solid var(--line); }
+.ep-sec-body { padding: 14px; display: grid; gap: 14px; }
+.ep-rec-grid { grid-template-columns: 1fr 0.8fr 0.8fr; }
+.ep-mails { display: grid; gap: 8px; padding: 12px; border-radius: 10px; background: var(--paper-2); }
+.ep-mail { display: inline-flex; align-items: center; gap: 6px; margin-right: 8px; }
+.ep-qsec { display: grid; gap: 6px; }
+.ep-qs { margin: 0; padding-left: 1.4em; display: grid; gap: 4px; }
+.ep-qs li { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.ep-qs li.is-asked .ep-q span { text-decoration: line-through; color: var(--muted); }
+.ep-q { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; color: var(--ink); font-size: 0.92rem; }
+.ep-q input { margin-top: 3px; }
+.ep-qtools { display: flex; gap: 6px; flex: none; }
+.ep-qadd { display: flex; gap: 6px; }
+.ep-qadd .input { flex: 1; }
+.ep-check { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ep-check li { display: flex; justify-content: space-between; gap: 8px; }
+.ep-check label { display: flex; gap: 8px; align-items: center; font-weight: 400; color: var(--ink); font-size: 0.92rem; }
+@media (max-width: 720px) {
+  .ep-side { grid-template-columns: 1fr; }
+  .episode-editor .ep-meta4, .ep-rec-grid { grid-template-columns: 1fr 1fr; }
+}
