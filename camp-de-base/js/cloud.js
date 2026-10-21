@@ -7,7 +7,7 @@
    (rien n'est perdu : ce qui existe d'un seul côté est gardé).
    ========================================================= */
 
-export const ARRAYS = ["contents", "pubs", "tasks", "notes", "siteStats", "audience"];
+export const ARRAYS = ["contents", "pubs", "tasks", "notes", "siteStats", "audience", "episodes"];
 
 /* Empreinte rapide d'une photo (pour savoir si elle a déjà été envoyée) */
 export function photoHash(str) {

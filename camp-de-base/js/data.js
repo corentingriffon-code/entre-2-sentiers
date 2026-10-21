@@ -64,7 +64,7 @@ export const NOTE_COLORS = { sable: "#efe3c8", sauge: "#dfe3d0", lime: "#e3eac7"
 /* Complète un état chargé (sauvegarde ancienne ou importée) avec les champs récents */
 export function normalizeState(s) {
   s.settings = { weeklyGoal: 2, ...(s.settings || {}) };
-  for (const k of ["siteStats", "audience", "tasks", "notes"]) if (!Array.isArray(s[k])) s[k] = [];
+  for (const k of ["siteStats", "audience", "tasks", "notes", "episodes"]) if (!Array.isArray(s[k])) s[k] = [];
   return s;
 }
 

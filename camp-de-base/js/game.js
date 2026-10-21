@@ -38,6 +38,8 @@ export const XP = {
   siteReport: 25,
   audienceReport: 25,
   task: 15,
+  // Podcast : chaque étape franchie fait grimper
+  episode: { idee: 10, prepa: 30, contact: 50, cale: 80, enregistre: 180, montage: 200, publie: 320 },
 };
 
 export const LEVELS = [
@@ -131,6 +133,7 @@ export function computeXP(state) {
   xp += (state.siteStats || []).filter((x) => x.source !== "auto").length * XP.siteReport;
   xp += (state.audience || []).filter((x) => x.source !== "auto").length * XP.audienceReport;
   xp += (state.tasks || []).filter((t) => t.done).length * XP.task;
+  (state.episodes || []).forEach((e) => (xp += XP.episode[e.status] || 0));
   return xp;
 }
 

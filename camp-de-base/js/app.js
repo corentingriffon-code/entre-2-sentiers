@@ -11,6 +11,7 @@ import {
 } from "./game.js";
 import { syncAll } from "./sync.js";
 import { createCloud, ARRAYS } from "./cloud.js";
+import { createPodcast } from "./podcast.js";
 import { importAllArticles } from "./importer.js";
 import { buildPrompt, parseArticle, cleanPost } from "./prompts.js";
 import { buildArticleHTML, slugify, readMinutes, wordCount, resizePhoto, cropPhoto, parseSources, formatSources, PILLAR_STYLE } from "./article.js";
@@ -370,6 +371,7 @@ function renderPlanning() {
                 <span class="pub-net">${NETWORKS[p.network].short}</span><span class="pub-title">${esc(c?.title || "Sans titre")}</span>
               </button>`;
             }).join("")}
+            ${podcast.planningChips(d)}
             ${state.tasks.filter((k) => k.due === d).map((k) => `<button type="button" class="task-chip ${k.done ? "is-done" : ""}" data-goto="memo" title="Tâche : ${esc(k.text)}"><span aria-hidden="true">${k.done ? "☑" : "☐"}</span><span class="pub-title">${esc(k.text)}</span></button>`).join("")}
           </div>`;
         }).join("")}
@@ -955,7 +957,7 @@ function renderTrophees() {
 /* ---------- Routage des vues ---------- */
 
 let view = "sentier";
-const VIEWS = ["sentier", "planning", "contenus", "stats", "memo", "trophees"];
+const VIEWS = ["sentier", "planning", "contenus", "stats", "podcast", "memo", "trophees"];
 const viewFromHash = () => {
   const h = location.hash.slice(1);
   return VIEWS.includes(h) ? h : "sentier";
@@ -988,6 +990,7 @@ function renderPanel() {
   else if (view === "stats") renderStats();
   else if (view === "trophees") renderTrophees();
   else if (view === "memo") renderMemo();
+  else if (view === "podcast") podcast.renderView($("#panel"));
   else $("#panel").innerHTML = "";
 }
 function renderAll() {
@@ -1174,6 +1177,31 @@ function copyText(text) {
   if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
   return Promise.reject(new Error("clipboard"));
 }
+
+/* ---------- Podcast ---------- */
+
+const podcast = createPodcast({
+  $, esc, uid, fmtDate, today, toast,
+  getState: () => state,
+  afterChange: () => afterChange(),
+  copyText: (t) => copyText(t),
+  redacUrl: REDAC_URL,
+  redacTarget: REDAC_TARGET,
+  pillars: PILLARS,
+  // Post réseaux de l'épisode : un contenu « Post » relié, programmé sur LinkedIn à la date de sortie
+  createSocialPost: (e) => {
+    const c = {
+      id: uid("c"), title: `Podcast : ${e.title || "nouvel épisode"}`, kind: "post", pillar: e.pillar || "", status: "pret", slug: "",
+      notes: `Épisode${e.number ? ` n°${e.number}` : ""}${e.guest?.name ? ` avec ${e.guest.name}` : ""}${e.pub?.url ? ` : ${e.pub.url}` : ""}`,
+      text: [e.pitch, e.quotes].filter(Boolean).join("\n\n"), createdAt: today(),
+    };
+    state.contents.push(c);
+    if (e.pub?.date) state.pubs.push({ id: uid("p"), contentId: c.id, network: "linkedin", date: e.pub.date, time: e.pub.time || "", status: "prevu", url: "", stats: {}, statsAt: null, plannedAt: today() });
+    afterChange();
+    toast(`Post « ${c.title} » créé dans Contenus${e.pub?.date ? `, programmé sur LinkedIn le ${fmtDate(e.pub.date)}` : ""}.`);
+  },
+});
+
 
 async function generate(mode, btn) {
   if (generating) return toast("Une rédaction est déjà en cours, patiente quelques secondes.");
