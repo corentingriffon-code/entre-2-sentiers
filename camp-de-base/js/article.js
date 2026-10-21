@@ -320,7 +320,7 @@ ${relatedHTML}
       <div class="footer-social">
         <a href="https://www.linkedin.com/in/corentin-griffon/" target="_blank" rel="noopener">LinkedIn</a>
         <a href="https://www.tiktok.com/@corentingrff" target="_blank" rel="noopener">TikTok</a>
-        <a href="https://www.instagram.com/_zoom_studio/" target="_blank" rel="noopener">Instagram</a>
+        <a href="https://www.instagram.com/entre2sentiers/" target="_blank" rel="noopener">Instagram</a>
       </div>
     </div>
     <div class="footer-bottom">
