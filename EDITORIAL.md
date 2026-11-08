@@ -62,6 +62,7 @@ Rien pour l'instant.
 - `decathlon-ne-signe-plus-des-athletes-mais-des-experts` — publié le 12/10. Sujet hors backlog, proposé directement par Corentin à partir de l'actualité Decathlon (rebrand 2024, partenariats Griezmann/Alex Sarr/Mathieu Blanchard/Blandine L'Hirondel, Grand Raid Kiprun 3 Vallées).
 - `sponsoring-sportif-marques-improbables` — publié le 14/10 directement via l'outil « Camp de base » (cas Dacia x UTMB, McDonald's, Burger King, Martini). Visuel Dacia x UTMB World Series ajouté le 15/10 (même photo que `qui-sera-le-grand-gagnant-utmb-2026`).
 - `red-bull-marque-media-athletes-outdoor` — publié le 04/11. Sujet hors backlog, proposé directement par Corentin à partir de la signature de Théo Detienne chez Red Bull. Pas d'équivalent EN pour l'instant.
+- `25h-qui-courent-cartes-marketing-caritatif` — publié le 08/11. Sujet hors backlog, à partir de la backyard caritative organisée par Clem Qui Court au profit de l'association Rêves (cartes de coureur façon Pokémon, application, boutique). Pas d'équivalent EN pour l'instant.
 
 Note (mis à jour le 04/11) : plusieurs articles du backlog ont été publiés directement via l'outil « Camp de base » depuis la dernière mise à jour de ce fichier (au moins `et-si-les-courses-fonctionnaient-comme-netflix` et `un-evenement-a-t-il-vraiment-besoin-d-un-site-internet`), sans que ce fichier soit mis à jour à chaque fois. La liste ci-dessus et le backlog plus haut peuvent donc être en retard sur l'état réel du site — se fier à `actualites.html` pour le featured et la grille à jour.
 
